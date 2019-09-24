@@ -7,46 +7,7 @@ import java.util.Date
 import java.util.Calendar
 import java.text.DateFormat
 val Random random = new Random()
-/**
-* Variables limits indoor air quality
-**/
-val Number GoodInsideCO2Min = 340
-val Number GoodInsideCO2Max = 600
-val Number ModerateInsideCO2Min = 601
-val Number ModerateInsideCO2Max = 1000
-val Number UnhealthyInsideCO2Min = 1001
-val Number UnhealthyInsideCO2Max = 1500
-val Number HazardousInsideCO2Min = 1501
-val Number HazardousInsideCO2Max = 5000
-
-val Number GoodInsidePM10Min = 0
-val Number GoodInsidePM10Max = 0.02
-val Number ModerateInsidePM10Min = 0.021
-val Number ModerateInsidePM10Max = 0.150
-val Number UnhealthyInsidePM10Min = 0.151
-val Number UnhealthyInsidePM10Max = 0.180
-val Number HazardousInsidePM10Min = 0.181
-val Number HazardousInsidePM10Max = 0.600
-
-val Number GoodInsideVOCMin = 0
-val Number GoodInsideVOCMax = 0.087
-val Number ModerateInsideVOCMin = 0.088
-val Number ModerateInsideVOCMax = 0.261
-val Number UnhealthyInsideVOCMin = 0.262
-val Number UnhealthyInsideVOCMax = 0.43
-val Number HazardousInsideVOCMin = 0.44
-val Number HazardousInsideVOCMax = 3
-
-val Number GoodInsideRhMin = 40
-val Number GoodInsideRhMax = 70
-val Number ModerateInsideRhMin = 70.1
-val Number ModerateInsideRhMax = 80
-val Number UnhealthyInsideRhMin = 80.1
-val Number UnhealthyInsideRhMax = 90
-val Number HazardousInsideRhMin = 90.1
-val Number HazardousInsideRhMax = 100
-
-//support variables
+//support variables for dates
 var String currentHour
 var String currentMinute
 var String startingClosingTime
@@ -60,7 +21,6 @@ var Date startingActivationDate
 var Date stoppingActivationDate
 var Date currentDate
 var DateFormat datos
-
 
 rule "StartLoop_MySmartHomeAQ"
 when
@@ -77,76 +37,7 @@ then
 	if (Managing_System_Active.state == ON) Managing_System_Active.postUpdate(OFF)
 end
 
-rule "Analyze_a_AQ"
-when
-	Item start_a_AQ received command ON
-then
-	sendCommand(start_a_AQ, OFF)
-	if(cbQuality>=                                ){
-		adaptation_required_a_AQ = true
-	}
-	else {
-		adaptation_required_a_AQ = false
-	}
-	if(adaptation_required_a_AQ){
-		sendCommand(start_p_AQ, ON)
-	}
-	else{
-		sendCommand(start_m_gf, ON)
-		sendCommand(start_m_ff, ON)
-	}
-end
-
-rule "Monitor_m_gf"
-when  //ripreso sull'idea di bebo
-	Item Starting_Hour_Windows_Closing changed or
-    Item Starting_Minute_Windows_Closing changed or
-    Item Stopping_Hour_Windows_Closing changed or
-    Item Stopping_Minute_Windows_Closing changed or
-    Item Starting_Hour_System_Activation changed or
-    Item Starting_Minute_System_Activation changed or
-    Item Stopping_Hour_System_Activation changed or
-    Item Stopping_Minute_System_Activation changed or
-    Time cron "0/30 0/1 * 1/1 * ? *" //Fire every 30 seconds (change to "0 0/1 * * * ?" to fire every minute) 
-then
-	sendCommand(start_m_gf, OFF)
-	sendCommand(gf_slave_to_aq_master, ON)
-end
-
-rule "Monitor_m_ff"
-when
-	Item start_m_ff received command ON
-then
-	sendCommand(start_m_ff, OFF)
-	sendCommand(ff_slave_to_aq_master, ON)
-end
-
-rule "Aggregator_m_gf_m_ff_a_AQ"
-when
-	Item gf_slaveff_slave_to_aq_master received update ON
-then
-	sendCommand(gf_slave_to_aq_master, OFF)
-	sendCommand(ff_slave_to_aq_master, OFF)
-	sendCommand(start_a_AQ, ON)
-end
-
-rule "Plan_p_AQ"
-when
-	Item start_p_AQ received command ON
-then
-	sendCommand(start_p_AQ, OFF)
-	sendCommand(start_e_gf, ON)
-	sendCommand(start_e_ff, ON)
-end
-
-rule "Exec_e_gf"
-when
-	Item start_e_gf received command ON
-then
-	sendCommand(start_e_gf, OFF)
-	sendCommand(start_m_gf, ON)
-end
-
+//-------------------------------------------------------------------------
 rule "Monitor_m_gf"
 when
 	Item start_m_gf received command ON
@@ -171,6 +62,47 @@ then
 	sendCommand(ff_slave_to_aq_master, OFF)
 	sendCommand(start_a_AQ, ON)
 end
+
+//-------------------------------------------------------------------------
+rule "Analyze_a_AQ"
+when
+	Item start_a_AQ received command ON
+then
+	sendCommand(start_a_AQ, OFF)
+	if(cbQuality>=                                ){
+		adaptation_required_a_AQ = true
+	}
+	else {
+		adaptation_required_a_AQ = false
+	}
+	if(adaptation_required_a_AQ){
+		sendCommand(start_p_AQ, ON)
+	}
+	else{
+		sendCommand(start_m_gf, ON)
+		sendCommand(start_m_ff, ON)
+	}
+end
+
+
+
+rule "Plan_p_AQ"
+when
+	Item start_p_AQ received command ON
+then
+	sendCommand(start_p_AQ, OFF)
+	sendCommand(start_e_gf, ON)
+	sendCommand(start_e_ff, ON)
+end
+
+rule "Exec_e_gf"
+when
+	Item start_e_gf received command ON
+then
+	sendCommand(start_e_gf, OFF)
+	sendCommand(start_m_gf, ON)
+end
+
 
 rule "Plan_p_AQ"
 when
