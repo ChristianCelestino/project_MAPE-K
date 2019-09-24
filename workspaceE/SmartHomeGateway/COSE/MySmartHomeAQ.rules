@@ -1,0 +1,213 @@
+var boolean adaptation_required_gf
+var boolean adaptation_required_ff
+
+import java.util.Random
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Calendar
+import java.text.DateFormat
+val Random random = new Random()
+/**
+* Variables limits indoor air quality
+**/
+val Number GoodInsideCO2Min = 340
+val Number GoodInsideCO2Max = 600
+val Number ModerateInsideCO2Min = 601
+val Number ModerateInsideCO2Max = 1000
+val Number UnhealthyInsideCO2Min = 1001
+val Number UnhealthyInsideCO2Max = 1500
+val Number HazardousInsideCO2Min = 1501
+val Number HazardousInsideCO2Max = 5000
+
+val Number GoodInsidePM10Min = 0
+val Number GoodInsidePM10Max = 0.02
+val Number ModerateInsidePM10Min = 0.021
+val Number ModerateInsidePM10Max = 0.150
+val Number UnhealthyInsidePM10Min = 0.151
+val Number UnhealthyInsidePM10Max = 0.180
+val Number HazardousInsidePM10Min = 0.181
+val Number HazardousInsidePM10Max = 0.600
+
+val Number GoodInsideVOCMin = 0
+val Number GoodInsideVOCMax = 0.087
+val Number ModerateInsideVOCMin = 0.088
+val Number ModerateInsideVOCMax = 0.261
+val Number UnhealthyInsideVOCMin = 0.262
+val Number UnhealthyInsideVOCMax = 0.43
+val Number HazardousInsideVOCMin = 0.44
+val Number HazardousInsideVOCMax = 3
+
+val Number GoodInsideRhMin = 40
+val Number GoodInsideRhMax = 70
+val Number ModerateInsideRhMin = 70.1
+val Number ModerateInsideRhMax = 80
+val Number UnhealthyInsideRhMin = 80.1
+val Number UnhealthyInsideRhMax = 90
+val Number HazardousInsideRhMin = 90.1
+val Number HazardousInsideRhMax = 100
+
+//support variables
+var String currentHour
+var String currentMinute
+var String startingClosingTime
+var String stoppingClosingTime
+var String startingSystemActivationTime
+var String stoppingSystemActivationTime
+var String currentDay
+var Date startingClosingDate
+var Date stoppingClosingDate
+var Date startingActivationDate
+var Date stoppingActivationDate
+var Date currentDate
+var DateFormat datos
+
+rule "StartLoop_MySmartHomeAQ"
+when
+	System started
+then
+	start_a_aq.sendCommand(OFF)
+	start_p_aq.sendCommand(OFF)
+	start_m_gf.sendCommand(ON)
+	start_e_gf.sendCommand(OFF)
+	start_m_ff.sendCommand(ON)
+	start_e_ff.sendCommand(OFF)
+end
+
+rule "Analyze_a_aq"
+when
+	Item start_a_aq received command ON
+then
+	sendCommand(start_a_aq, OFF)
+	if(((Math::random * 100.0).intValue + 1) <= 50 ){
+		adaptation_required_a_aq = true
+	}
+	else {
+		adaptation_required_a_aq = false
+	}
+	if(adaptation_required_a_aq){
+		sendCommand(start_p_aq, ON)
+	}
+	else{
+		sendCommand(start_m_gf, ON)
+		sendCommand(start_m_ff, ON)
+	}
+end
+
+rule "Monitor_m_gf"
+when
+	Item start_m_gf received command ON
+then
+	sendCommand(start_m_gf, OFF)
+	sendCommand(gf_slave_to_aq_master, ON)
+end
+
+rule "Monitor_m_ff"
+when
+	Item start_m_ff received command ON
+then
+	sendCommand(start_m_ff, OFF)
+	sendCommand(ff_slave_to_aq_master, ON)
+end
+
+rule "Aggregator_m_gf_m_ff_a_aq"
+when
+	Item gf_slaveff_slave_to_aq_master received update ON
+then
+	sendCommand(gf_slave_to_aq_master, OFF)
+	sendCommand(ff_slave_to_aq_master, OFF)
+	sendCommand(start_a_aq, ON)
+end
+
+rule "Plan_p_aq"
+when
+	Item start_p_aq received command ON
+then
+	sendCommand(start_p_aq, OFF)
+	sendCommand(start_e_gf, ON)
+	sendCommand(start_e_ff, ON)
+end
+
+rule "Exec_e_gf"
+when
+	Item start_e_gf received command ON
+then
+	sendCommand(start_e_gf, OFF)
+	sendCommand(start_m_gf, ON)
+end
+
+rule "Monitor_m_gf"
+when
+	Item start_m_gf received command ON
+then
+	sendCommand(start_m_gf, OFF)
+	sendCommand(gf_slave_to_aq_master, ON)
+end
+
+rule "Monitor_m_ff"
+when
+	Item start_m_ff received command ON
+then
+	sendCommand(start_m_ff, OFF)
+	sendCommand(ff_slave_to_aq_master, ON)
+end
+
+rule "Aggregator_m_gf_m_ff_a_aq"
+when
+	Item gf_slaveff_slave_to_aq_master received update ON
+then
+	sendCommand(gf_slave_to_aq_master, OFF)
+	sendCommand(ff_slave_to_aq_master, OFF)
+	sendCommand(start_a_aq, ON)
+end
+
+rule "Plan_p_aq"
+when
+	Item start_p_aq received command ON
+then
+	sendCommand(start_p_aq, OFF)
+	sendCommand(start_e_gf, ON)
+	sendCommand(start_e_ff, ON)
+end
+
+rule "Exec_e_ff"
+when
+	Item start_e_ff received command ON
+then
+	sendCommand(start_e_ff, OFF)
+	sendCommand(start_m_ff, ON)
+end
+
+rule "Monitor_m_gf"
+when
+	Item start_m_gf received command ON
+then
+	sendCommand(start_m_gf, OFF)
+	sendCommand(gf_slave_to_aq_master, ON)
+end
+
+rule "Monitor_m_ff"
+when
+	Item start_m_ff received command ON
+then
+	sendCommand(start_m_ff, OFF)
+	sendCommand(ff_slave_to_aq_master, ON)
+end
+
+rule "Aggregator_m_gf_m_ff_a_aq"
+when
+	Item gf_slaveff_slave_to_aq_master received update ON
+then
+	sendCommand(gf_slave_to_aq_master, OFF)
+	sendCommand(ff_slave_to_aq_master, OFF)
+	sendCommand(start_a_aq, ON)
+end
+
+rule "Plan_p_aq"
+when
+	Item start_p_aq received command ON
+then
+	sendCommand(start_p_aq, OFF)
+	sendCommand(start_e_gf, ON)
+	sendCommand(start_e_ff, ON)
+end
+
