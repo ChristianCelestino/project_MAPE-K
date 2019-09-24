@@ -6,45 +6,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Calendar
 import java.text.DateFormat
-val Random random = new Random()
-/**
-* Variables limits indoor air quality
-**/
-val Number GoodInsideCO2Min = 340
-val Number GoodInsideCO2Max = 600
-val Number ModerateInsideCO2Min = 601
-val Number ModerateInsideCO2Max = 1000
-val Number UnhealthyInsideCO2Min = 1001
-val Number UnhealthyInsideCO2Max = 1500
-val Number HazardousInsideCO2Min = 1501
-val Number HazardousInsideCO2Max = 5000
-
-val Number GoodInsidePM10Min = 0
-val Number GoodInsidePM10Max = 0.02
-val Number ModerateInsidePM10Min = 0.021
-val Number ModerateInsidePM10Max = 0.150
-val Number UnhealthyInsidePM10Min = 0.151
-val Number UnhealthyInsidePM10Max = 0.180
-val Number HazardousInsidePM10Min = 0.181
-val Number HazardousInsidePM10Max = 0.600
-
-val Number GoodInsideVOCMin = 0
-val Number GoodInsideVOCMax = 0.087
-val Number ModerateInsideVOCMin = 0.088
-val Number ModerateInsideVOCMax = 0.261
-val Number UnhealthyInsideVOCMin = 0.262
-val Number UnhealthyInsideVOCMax = 0.43
-val Number HazardousInsideVOCMin = 0.44
-val Number HazardousInsideVOCMax = 3
-
-val Number GoodInsideRhMin = 40
-val Number GoodInsideRhMax = 70
-val Number ModerateInsideRhMin = 70.1
-val Number ModerateInsideRhMax = 80
-val Number UnhealthyInsideRhMin = 80.1
-val Number UnhealthyInsideRhMax = 90
-val Number HazardousInsideRhMin = 90.1
-val Number HazardousInsideRhMax = 100
 
 //support variables
 var String currentHour
@@ -61,9 +22,24 @@ var Date stoppingActivationDate
 var Date currentDate
 var DateFormat datos
 
+var Number liv_Pm10
+var Number ki_Pm10
+var Number ba_Pm10
+var Number cor_Pm10
+var Number forza //Varibile per la forzatura delle finestre: 0 (inattivo), 1 (apertura), 2 (chiusura)
+
 rule "StartLoop_MySmartHomeAQ"
 when
-	System started
+	System started or
+	Item Starting_Hour_Windows_Closing changed or
+    Item Starting_Minute_Windows_Closing changed or
+    Item Stopping_Hour_Windows_Closing changed or
+    Item Stopping_Minute_Windows_Closing changed or
+    Item Starting_Hour_System_Activation changed or
+    Item Starting_Minute_System_Activation changed or
+    Item Stopping_Hour_System_Activation changed or
+    Item Stopping_Minute_System_Activation changed
+
 then
 	start_a_aq.sendCommand(OFF)
 	start_p_aq.sendCommand(OFF)
@@ -71,6 +47,74 @@ then
 	start_e_gf.sendCommand(OFF)
 	start_m_ff.sendCommand(ON)
 	start_e_ff.sendCommand(OFF)
+	adaptation_required_ff= false
+	adaptation_required_gf= false
+	forza= 0 // Impostazione varibile a 0
+
+	if (stoppingClosingDate.before(startingClosingDate)){
+        Stopping_Hour_Windows_Closing.state = Starting_Hour_Windows_Closing.state
+        Stopping_Minute_Windows_Closing.state = Starting_Minute_Windows_Closing.state
+    }
+
+    if (stoppingActivationDate.before(startingActivationDate)){
+        Stopping_Hour_System_Activation.state = Starting_Hour_System_Activation.state
+        Stopping_Minute_System_Activation.state = Starting_Minute_System_Activation.state
+    }
+
+    if (startingActivationDate.after(startingClosingDate) && startingActivationDate.before(stoppingClosingDate)){
+        Starting_Hour_System_Activation.state = Stopping_Hour_Windows_Closing.state
+        Starting_Minute_System_Activation.state = Stopping_Minute_Windows_Closing.state
+    }
+
+    if (stoppingActivationDate.after(startingClosingDate) && stoppingActivationDate.before(stoppingClosingDate)){
+        Stopping_Hour_System_Activation.state = Starting_Hour_Windows_Closing.state
+        Stopping_Minute_System_Activation.state = Starting_Minute_Windows_Closing.state
+    }
+
+    if (startingClosingDate.after(startingActivationDate) && startingClosingDate.before(stoppingActivationDate)){
+        Starting_Hour_Windows_Closing.state = Stopping_Hour_System_Activation.state
+        Starting_Minute_Windows_Closing.state = Stopping_Minute_System_Activation.state
+    }
+
+    if (stoppingClosingDate.after(startingActivationDate) && stoppingClosingDate.before(stoppingActivationDate)){
+        Stopping_Hour_Windows_Closing.state = Starting_Hour_System_Activation.state
+        Stopping_Minute_Windows_Closing.state = Starting_Minute_System_Activation.state
+    }
+
+	if (Managing_System_Active.state == ON) Managing_System_Active.postUpdate(OFF)
+end
+
+rule "Monitor_m_gf"
+when
+	Item start_m_gf received command ON or
+	Item GF_Bathroom_AqPm10 changed or
+	Item GF_Living_AqPm10 changed or
+	Item GF_Kitchen_AqPm10 changed 
+then
+	sendCommand(start_m_gf, OFF)
+	sendCommand(gf_slave_to_aq_master, ON)
+	liv_Pm10= GF_Living_AqPm10
+	ba_Pm10= GF_Bathroom_AqPm10
+	ki_Pm10= GF_Kitchen_AqPm10
+end
+
+rule "Monitor_m_ff"
+when
+	Item start_m_ff received command ON or
+	Item FF_Corridor_AqPm10 changed 
+then
+	sendCommand(start_m_ff, OFF)
+	sendCommand(ff_slave_to_aq_master, ON)
+	cor_Pm10= FF_Corridor_AqPm10
+end
+
+rule "Aggregator_m_gf_m_ff_a_aq"
+when
+	Item gf_slaveff_slave_to_aq_master received update ON
+then
+	sendCommand(gf_slave_to_aq_master, OFF)
+	sendCommand(ff_slave_to_aq_master, OFF)
+	sendCommand(start_a_aq, ON)
 end
 
 rule "Analyze_a_aq"
@@ -78,13 +122,27 @@ when
 	Item start_a_aq received command ON
 then
 	sendCommand(start_a_aq, OFF)
-	if(((Math::random * 100.0).intValue + 1) <= 50 ){
-		adaptation_required_a_aq = true
+
+// Forzatura
+	if((currentDate.after(startingClosingDate) && currentDate.before(stoppingClosingDate))){
+		forza= 1 
+
+	else if (currentDate.after(startingActivationDate) && currentDate.before(stoppingActivationDate)){
+		forza= 2
+
+	else 
+		forza= 0
+
+// Air_Quality
+	if (forza==0) {
+		if () 
+			adaptation_required_ff= true
+		
+		else if ()
+			adaptation_required_gf= true
 	}
-	else {
-		adaptation_required_a_aq = false
-	}
-	if(adaptation_required_a_aq){
+
+	if(adaptation_required_ff || adaptation_required_gf){
 		sendCommand(start_p_aq, ON)
 	}
 	else{
@@ -93,38 +151,21 @@ then
 	}
 end
 
-rule "Monitor_m_gf"
-when
-	Item start_m_gf received command ON
-then
-	sendCommand(start_m_gf, OFF)
-	sendCommand(gf_slave_to_aq_master, ON)
-end
-
-rule "Monitor_m_ff"
-when
-	Item start_m_ff received command ON
-then
-	sendCommand(start_m_ff, OFF)
-	sendCommand(ff_slave_to_aq_master, ON)
-end
-
-rule "Aggregator_m_gf_m_ff_a_aq"
-when
-	Item gf_slaveff_slave_to_aq_master received update ON
-then
-	sendCommand(gf_slave_to_aq_master, OFF)
-	sendCommand(ff_slave_to_aq_master, OFF)
-	sendCommand(start_a_aq, ON)
-end
-
 rule "Plan_p_aq"
 when
 	Item start_p_aq received command ON
 then
-	sendCommand(start_p_aq, OFF)
-	sendCommand(start_e_gf, ON)
-	sendCommand(start_e_ff, ON)
+	sendCommand(start_p_aq, OFF)	
+
+	if (adaptation_required_gf || forza!=0) {
+		adaptation_required_gf= false	
+		sendCommand(start_e_gf, ON)
+	}
+	if (adaptation_required_ff || forza!=0) {
+		adaptation_required_ff= false
+		sendCommand(start_e_ff, ON)
+		
+
 end
 
 rule "Exec_e_gf"
@@ -133,81 +174,41 @@ when
 then
 	sendCommand(start_e_gf, OFF)
 	sendCommand(start_m_gf, ON)
+
+	if (forza!=0) {
+		if (forza==1) {
+			GF_Living_Window.postUpdate("OPEN")
+            GF_Kitchen_Window.postUpdate("OPEN")
+            GF_Bathroom_Window.postUpdate("OPEN")
+		}
+		else if (forza==2) {
+			GF_Living_Window.postUpdate("CLOSED")
+            GF_Kitchen_Window.postUpdate("CLOSED")
+            GF_Bathroom_Window.postUpdate("CLOSED")
+		}
+	} else {
+
+	}
 end
 
-rule "Monitor_m_gf"
-when
-	Item start_m_gf received command ON
-then
-	sendCommand(start_m_gf, OFF)
-	sendCommand(gf_slave_to_aq_master, ON)
-end
-
-rule "Monitor_m_ff"
-when
-	Item start_m_ff received command ON
-then
-	sendCommand(start_m_ff, OFF)
-	sendCommand(ff_slave_to_aq_master, ON)
-end
-
-rule "Aggregator_m_gf_m_ff_a_aq"
-when
-	Item gf_slaveff_slave_to_aq_master received update ON
-then
-	sendCommand(gf_slave_to_aq_master, OFF)
-	sendCommand(ff_slave_to_aq_master, OFF)
-	sendCommand(start_a_aq, ON)
-end
-
-rule "Plan_p_aq"
-when
-	Item start_p_aq received command ON
-then
-	sendCommand(start_p_aq, OFF)
-	sendCommand(start_e_gf, ON)
-	sendCommand(start_e_ff, ON)
-end
-
-rule "Exec_e_ff"
+rule "Plan_e_ff"
 when
 	Item start_e_ff received command ON
 then
 	sendCommand(start_e_ff, OFF)
 	sendCommand(start_m_ff, ON)
-end
 
-rule "Monitor_m_gf"
-when
-	Item start_m_gf received command ON
-then
-	sendCommand(start_m_gf, OFF)
-	sendCommand(gf_slave_to_aq_master, ON)
-end
-
-rule "Monitor_m_ff"
-when
-	Item start_m_ff received command ON
-then
-	sendCommand(start_m_ff, OFF)
-	sendCommand(ff_slave_to_aq_master, ON)
-end
-
-rule "Aggregator_m_gf_m_ff_a_aq"
-when
-	Item gf_slaveff_slave_to_aq_master received update ON
-then
-	sendCommand(gf_slave_to_aq_master, OFF)
-	sendCommand(ff_slave_to_aq_master, OFF)
-	sendCommand(start_a_aq, ON)
-end
-
-rule "Plan_p_aq"
-when
-	Item start_p_aq received command ON
-then
-	sendCommand(start_p_aq, OFF)
-	sendCommand(start_e_gf, ON)
-	sendCommand(start_e_ff, ON)
+	if (forza!=0) {
+		if (forza==1) {
+			FF_Bedroom_Window.postUpdate("OPEN")
+			FF_ChildrenRoom_Window.postUpdate("OPEN")
+		}
+		else if (forza==2) {
+			FF_Bedroom_Window.postUpdate("CLOSED")
+			FF_ChildrenRoom_Window.postUpdate("CLOSED")
+		}
+	} else {
+		
+	}
 end
 
