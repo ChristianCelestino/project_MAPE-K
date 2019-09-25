@@ -1,4 +1,5 @@
-var boolean adaptation_required_a_hc
+var boolean adaptation_required_gf
+var boolean adaptation_required_ff
 
 rule "StartLoop_MySmartHomeHC"
 when
@@ -10,6 +11,33 @@ then
 	start_e_gf.sendCommand(OFF)
 	start_m_ff.sendCommand(ON)
 	start_e_ff.sendCommand(OFF)
+	adaptation_required_gf= false
+	adaptation_required_ff= false
+end
+
+rule "Monitor_m_gf"
+when
+	Item start_m_gf received command ON
+then
+	sendCommand(start_m_gf, OFF)
+	sendCommand(gf_slave_to_hc_master, ON)
+end
+
+rule "Monitor_m_ff"
+when
+	Item start_m_ff received command ON
+then
+	sendCommand(start_m_ff, OFF)
+	sendCommand(ff_slave_to_hc_master, ON)
+end
+
+rule "Aggregator_m_gf_m_ff_a_hc"
+when
+	Item gf_slaveff_slave_to_hc_master received update ON
+then
+	sendCommand(gf_slave_to_hc_master, OFF)
+	sendCommand(ff_slave_to_hc_master, OFF)
+	sendCommand(start_a_hc, ON)
 end
 
 rule "Analyze_a_hc"
@@ -32,31 +60,6 @@ then
 	}
 end
 
-rule "Monitor_m_gf"
-when
-	Item start_m_gf received command ON
-then
-	sendCommand(start_m_gf, OFF)
-	sendCommand(gf_slave_to_hc_master, ON)
-end
-
-rule "Monitor_m_ff"
-when
-	Item start_m_ff received command ON
-then
-	sendCommand(start_m_ff, OFF)
-	sendCommand(ff_slave_to_hc_master, ON)
-end
-
-rule "Aggregator_m_gf_m_ff_a_hc"
-when
-	Item gf_slaveff_slave_to_hc_master received update ON
-then
-	sendCommand(gf_slave_to_hc_master, OFF)
-	sendCommand(ff_slave_to_hc_master, OFF)
-	sendCommand(start_a_hc, ON)
-end
-
 rule "Plan_p_hc"
 when
 	Item start_p_hc received command ON
@@ -74,40 +77,6 @@ then
 	sendCommand(start_m_gf, ON)
 end
 
-rule "Monitor_m_gf"
-when
-	Item start_m_gf received command ON
-then
-	sendCommand(start_m_gf, OFF)
-	sendCommand(gf_slave_to_hc_master, ON)
-end
-
-rule "Monitor_m_ff"
-when
-	Item start_m_ff received command ON
-then
-	sendCommand(start_m_ff, OFF)
-	sendCommand(ff_slave_to_hc_master, ON)
-end
-
-rule "Aggregator_m_gf_m_ff_a_hc"
-when
-	Item gf_slaveff_slave_to_hc_master received update ON
-then
-	sendCommand(gf_slave_to_hc_master, OFF)
-	sendCommand(ff_slave_to_hc_master, OFF)
-	sendCommand(start_a_hc, ON)
-end
-
-rule "Plan_p_hc"
-when
-	Item start_p_hc received command ON
-then
-	sendCommand(start_p_hc, OFF)
-	sendCommand(start_e_gf, ON)
-	sendCommand(start_e_ff, ON)
-end
-
 rule "Exec_e_ff"
 when
 	Item start_e_ff received command ON
@@ -115,38 +84,3 @@ then
 	sendCommand(start_e_ff, OFF)
 	sendCommand(start_m_ff, ON)
 end
-
-rule "Monitor_m_gf"
-when
-	Item start_m_gf received command ON
-then
-	sendCommand(start_m_gf, OFF)
-	sendCommand(gf_slave_to_hc_master, ON)
-end
-
-rule "Monitor_m_ff"
-when
-	Item start_m_ff received command ON
-then
-	sendCommand(start_m_ff, OFF)
-	sendCommand(ff_slave_to_hc_master, ON)
-end
-
-rule "Aggregator_m_gf_m_ff_a_hc"
-when
-	Item gf_slaveff_slave_to_hc_master received update ON
-then
-	sendCommand(gf_slave_to_hc_master, OFF)
-	sendCommand(ff_slave_to_hc_master, OFF)
-	sendCommand(start_a_hc, ON)
-end
-
-rule "Plan_p_hc"
-when
-	Item start_p_hc received command ON
-then
-	sendCommand(start_p_hc, OFF)
-	sendCommand(start_e_gf, ON)
-	sendCommand(start_e_ff, ON)
-end
-
