@@ -28,7 +28,6 @@ var Number ki_Pm10
 var Number ba_Pm10
 var Number cor_Pm10
 var Number forza //Varibile per la forzatura delle finestre: 0 (inattivo), 1 (apertura), 2 (chiusura)
-var boolean [] flag_gf_open
 
 rule "StartLoop_MySmartHomeAQ"
 when
@@ -43,15 +42,15 @@ when
     Item Stopping_Minute_System_Activation changed
 
 then
+	start_m_gf.sendCommand(ON)
+	start_m_ff.sendCommand(ON)
 	start_a_aq.sendCommand(OFF)
 	start_p_aq.sendCommand(OFF)
-	start_m_gf.sendCommand(ON)
 	start_e_gf.sendCommand(OFF)
-	start_m_ff.sendCommand(ON)
 	start_e_ff.sendCommand(OFF)
 	adaptation_required_ff= false
 	adaptation_required_gf= false
-	forza= 0 // Impostazione varibile a 0
+	forza= 0                          // Impostazione varibile a 0
 
 	if (stoppingClosingDate.before(startingClosingDate)){
         Stopping_Hour_Windows_Closing.state = Starting_Hour_Windows_Closing.state
@@ -270,7 +269,6 @@ then
 			FF_Bedroom_Window.postUpdate("OPEN")
 			FF_ChildrenRoom_Window.postUpdate("OPEN")
 		}
-		
 	}
 end
 
