@@ -24,8 +24,7 @@ var int forza //1=apertura 2=chiusura 0=nulla
 
 rule "StartLoop_MySmartHomeAQ"
 when
-	System started or 
-	Item start_m_gf received command ON and              //quando l'utente attua un cambiamento delle date di chiusura/apertura il sistema si riavvia
+	System started or               //quando l'utente attua un cambiamento delle date di chiusura/apertura il sistema si riavvia
 	Item Starting_Hour_Windows_Closing changed or
     Item Starting_Minute_Windows_Closing changed or
     Item Stopping_Hour_Windows_Closing changed or
@@ -33,8 +32,7 @@ when
     Item Starting_Hour_System_Activation changed or
     Item Starting_Minute_System_Activation changed or
     Item Stopping_Hour_System_Activation changed or
-    Item Stopping_Minute_System_Activation changed or     
-	
+    Item Stopping_Minute_System_Activation changed or 	
 then
 	if (stoppingClosingDate.before(startingClosingDate)){
         Stopping_Hour_Windows_Closing.state = Starting_Hour_Windows_Closing.state
@@ -60,6 +58,10 @@ then
         Stopping_Hour_Windows_Closing.state = Starting_Hour_System_Activation.state
         Stopping_Minute_Windows_Closing.state = Starting_Minute_System_Activation.state
     }   //controlli per vedere se l'utente ha sbagliato a inserire gli orari di chiusura e apertura delle finestre
+
+
+	
+
 
 	start_a_AQ.sendCommand(OFF)
 	start_p_AQ.sendCommand(OFF)
@@ -92,6 +94,7 @@ then
     startingActivationDate = datos.parse(startingSystemActivationTime)
     stoppingActivationDate = datos.parse(stoppingSystemActivationTime)        //tutto questo serve per inserire in queste ultime variabili le date di start e di stop del sistema
 	sendCommand(gf_slave_to_aq_master, ON)
+	
 
 end
 //&&&&&&&&&&&&&&&&&
@@ -137,10 +140,15 @@ then
 		forza=2  //chiudere
 		sendCommand(start_p_AQ, ON)
 	}
-
-	if (currentDate.after(startingActivationDate) && currentDate.before(stoppingActivationDate)){
+	else if (currentDate.after(startingActivationDate) && currentDate.before(stoppingActivationDate)){
 		forza=1  //aprire
 		sendCommand(start_p_AQ, ON)
+	}
+	//se non sono nelle fasce orarie di chiusura o apertura ricomincio a monitorare
+	else {
+		forza=0
+		sendCommand(start_m_ff, ON)
+		sendCommand(start_m_gf,ON)
 	}
 //-----------&&&&&&&&&&&---------- qui devo fare i controlli della qualità dell'aria
 	if (forza==0){
@@ -215,6 +223,7 @@ then
 		FF_Bedroom_Window.postUpdate("CLOSED")
         FF_ChildrenRoom_Window.postUpdate("CLOSED")
 	}
+	forza=0 						//ogni volta che si riavvia il sistema rimette il flag "forza a 0"    
 
 
 
