@@ -1,0 +1,55 @@
+var boolean adaptation_required_a_fd_gf
+
+rule "StartLoop_ComfortableHeating"
+when
+	System started
+then
+	start_m_fd_gf.sendCommand(ON)
+	start_a_fd_gf.sendCommand(OFF)
+	start_p_fd_gf.sendCommand(OFF)
+	start_e_fd_gf.sendCommand(OFF)
+end
+
+rule "Monitor_m_fd_gf"
+when
+	Item start_m_fd_gf received command ON
+then
+	sendCommand(start_m_fd_gf, OFF)
+	sendCommand(start_a_fd_gf, ON)
+end
+
+rule "Analyze_a_fd_gf"
+when
+	Item start_a_fd_gf received command ON
+then
+	sendCommand(start_a_fd_gf, OFF)
+	if(((Math::random * 100.0).intValue + 1) <= 50 ){
+		adaptation_required_a_fd_gf = true
+	}
+	else {
+		adaptation_required_a_fd_gf = false
+	}
+	if(adaptation_required_a_fd_gf){
+		sendCommand(start_p_fd_gf, ON)
+	}
+	else{
+		sendCommand(start_m_fd_gf, ON)
+	}
+end
+
+rule "Plan_p_fd_gf"
+when
+	Item start_p_fd_gf received command ON
+then
+	sendCommand(start_p_fd_gf, OFF)
+	sendCommand(start_e_fd_gf, ON)
+end
+
+rule "Exec_e_fd_gf"
+when
+	Item start_e_fd_gf received command ON
+then
+	sendCommand(start_e_fd_gf, OFF)
+	sendCommand(start_m_fd_gf, ON)
+end
+
