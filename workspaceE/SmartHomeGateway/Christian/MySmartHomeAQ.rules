@@ -82,7 +82,6 @@ then
 	if (Managing_System_Active.state == ON) Managing_System_Active.postUpdate(OFF)
 end
 
-//-------------------------------------------------------------------------
 rule "Monitor_m_gf"
 when
 	Item start_m_gf received command ON or
@@ -96,7 +95,7 @@ then
 
 	sendCommand(gf_slave_to_aq_master, ON)
 end
-//&&&&&&&&&&&&&&&&&
+
 rule "Monitor_m_ff"
 when
 	Item start_m_ff received command ON and
@@ -127,7 +126,7 @@ then
     startingActivationDate = datos.parse(startingSystemActivationTime)
     stoppingActivationDate = datos.parse(stoppingSystemActivationTime)        //tutto questo serve per inserire in queste ultime variabili le date di start e di stop del sistema
 	
-	ex_Pm10= (SimAqi_Pm10.state as DecimalType).doubleValue
+	ex_Pm10= (SimAqi_Pm10.state as DecimalType).doubleValue 				  //ricaviamo la qualità esterna dell'aria
 
 	sendCommand(gf_slave_to_aq_master, OFF)
 	sendCommand(ff_slave_to_aq_master, OFF)
