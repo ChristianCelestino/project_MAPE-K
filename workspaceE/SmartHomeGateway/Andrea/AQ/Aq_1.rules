@@ -87,7 +87,7 @@ end
 
 rule "Monitor_m_gf"
 when
-	Item start_m_gf received command ON or
+	Item start_m_gf received command ON or     // AGGIORNAMENTO OGNI £= SEC???
 	Item GF_Bathroom_AqPm10 changed or
 	Item GF_Living_AqPm10 changed or
 	Item GF_Kitchen_AqPm10 changed 
@@ -101,7 +101,7 @@ end
 
 rule "Monitor_m_ff"
 when
-	Item start_m_ff received command ON or
+	Item start_m_ff received command ON or   // AGGIORNAMENTO OGNI £= SEC???
 	Item FF_Corridor_AqPm10 changed 
 then
 	sendCommand(start_m_ff, OFF)
@@ -116,6 +116,19 @@ then
 	sendCommand(gf_slave_to_aq_master, OFF)
 	sendCommand(ff_slave_to_aq_master, OFF)
 	sendCommand(start_a_aq, ON)
+
+	ex_Pm10= (SimAqi_Pm10.state as DecimalType).doubleValue
+	datos = new SimpleDateFormat ("yyyy-MM-dd HH:mm:ss")
+    currentDate = new Date()
+    currentDay = Calendar.getInstance().get(Calendar.YEAR).toString() + "-" + (Calendar.getInstance().get(Calendar.MONTH)+1).toString() + "-" + Calendar.getInstance().get(Calendar.DAY_OF_MONTH).toString()
+    startingClosingTime = currentDay + " " + Starting_Hour_Windows_Closing.state.toString + ":" + Starting_Minute_Windows_Closing.state.toString + ":00"
+    stoppingClosingTime = currentDay + " " + Stopping_Hour_Windows_Closing.state.toString + ":" + Stopping_Minute_Windows_Closing.state.toString + ":00"
+    startingSystemActivationTime = currentDay + " " + Starting_Hour_System_Activation.state.toString + ":" + Starting_Minute_System_Activation.state.toString + ":00"
+    stoppingSystemActivationTime = currentDay + " " + Stopping_Hour_System_Activation.state.toString + ":" + Stopping_Minute_System_Activation.state.toString + ":00"
+    startingClosingDate = datos.parse(startingClosingTime)
+    stoppingClosingDate = datos.parse(stoppingClosingTime)
+    startingActivationDate = datos.parse(startingSystemActivationTime)
+    stoppingActivationDate = datos.parse(stoppingSystemActivationTime)
 end
 
 rule "Analyze_a_aq"
@@ -123,8 +136,7 @@ when
 	Item start_a_aq received command ON
 then
 	sendCommand(start_a_aq, OFF)
-	ex_Pm10= (SimAqi_Pm10.state as DecimalType).doubleValue
-// Forzatura
+// Impisto forzatura
 	if((currentDate.after(startingClosingDate) && currentDate.before(stoppingClosingDate))){
 		forza= 1 
 
@@ -151,7 +163,7 @@ then
 			
 			adaptation_required_ff= true
 		}
-	} else {
+	} else { 						 // Forzatura
 		if (forza==1) {
 			if ((GF_Kitchen_Window.state=="CLOSE" or 
 			GF_Living_Window.state=="CLOSE" or 
@@ -172,7 +184,7 @@ then
 			adaptation_required_gf= true
 			}
 
-			if (FF_Bedroom_Window.state as "OPEN" or
+			if (FF_Bedroom_Window.state=="OPEN" or
 			FF_ChildrenRoom_Window.state=="OPEN") {
 				adaptation_required_ff= true
 			}
