@@ -15,11 +15,11 @@ val Number Hysteresis = 0.3
 **/
 rule "8:30"
 when
-    Time cron "0 30 8 ? * * *"
+    Time cron "0 30 8 ? * * *"                                                          //alle 8:30
 then
-    GF_Heating_TempNormal.postUpdate(GF_Heating_MorningTempNormal.state as Number)
+    GF_Heating_TempNormal.postUpdate(GF_Heating_MorningTempNormal.state as Number)      //setto la temperatura del piano terra e gel primo piano alla temperatura normale del mattino
     FF_Heating_TempNormal.postUpdate(FF_Heating_MorningTempNormal.state as Number)
-    Heating_UpdateTarget.sendCommand(ON)
+    Heating_UpdateTarget.sendCommand(ON)                                                //indico che è stata cambiata la temperatura
 end
 
 rule "13:30"
@@ -56,7 +56,7 @@ end
 **/
 rule "React on heating mode switch, send target temperatures"
 when
-    Item Heating_Mode received update or
+    Item Heating_Mode received update or                            //se è stato acceso il riscaldamento o è stata riscontrata la necessità di attivare il riscaldamento
     Item Heating_UpdateTarget received command ON
 then
     Heating_UpdateTarget.postUpdate(OFF)
