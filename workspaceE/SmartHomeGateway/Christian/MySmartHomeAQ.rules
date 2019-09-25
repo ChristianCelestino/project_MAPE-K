@@ -1,11 +1,12 @@
 var boolean adaptation_required_gf
 var boolean adaptation_required_ff
+
 import java.util.Random
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Calendar
 import java.text.DateFormat
-val Random random = new Random()
+
 //support variables for dates
 var String currentHour
 var String currentMinute
@@ -20,7 +21,15 @@ var Date startingActivationDate
 var Date stoppingActivationDate
 var Date currentDate
 var DateFormat datos
-var int forza //1=apertura 2=chiusura 0=nulla
+
+var int forza 						//1=apertura 2=chiusura 0=nulla
+var int ex_Pm10
+var Number ex_Pm10
+var Number liv_Pm10
+var Number ki_Pm10
+var Number ba_Pm10
+var Number cor_Pm10
+
 
 rule "StartLoop_MySmartHomeAQ"
 when
@@ -57,11 +66,10 @@ then
     if (stoppingClosingDate.after(startingActivationDate) && stoppingClosingDate.before(stoppingActivationDate)){
         Stopping_Hour_Windows_Closing.state = Starting_Hour_System_Activation.state
         Stopping_Minute_Windows_Closing.state = Starting_Minute_System_Activation.state
-    }   //controlli per vedere se l'utente ha sbagliato a inserire gli orari di chiusura e apertura delle finestre
-
+    }   					//controlli per vedere se l'utente ha sbagliato a inserire gli orari di chiusura e apertura delle finestre
 
 	
-
+	forza=0  //ogni volta che si apre il sistema setto di nuovo a zero la variabile
 
 	start_a_AQ.sendCommand(OFF)
 	start_p_AQ.sendCommand(OFF)
@@ -81,21 +89,12 @@ when
     Time cron "0/30 0/1 * 1/1 * ? *" //ogni 30 secondi attua il controllo di monitoring (change to "0 0/1 * * * ?" to fire every minute) 
 then
 	sendCommand(start_m_gf, OFF)
-	//prendiamo l'orario corrente e salviamolo per i confronti che svolgeremo nell'analysis
-	datos = new SimpleDateFormat ("yyyy-MM-dd HH:mm:ss")
-    currentDate = new Date()
-    currentDay = Calendar.getInstance().get(Calendar.YEAR).toString() + "-" + (Calendar.getInstance().get(Calendar.MONTH)+1).toString() + "-" + Calendar.getInstance().get(Calendar.DAY_OF_MONTH).toString()
-    startingClosingTime = currentDay + " " + Starting_Hour_Windows_Closing.state.toString + ":" + Starting_Minute_Windows_Closing.state.toString + ":00"
-    stoppingClosingTime = currentDay + " " + Stopping_Hour_Windows_Closing.state.toString + ":" + Stopping_Minute_Windows_Closing.state.toString + ":00"
-    startingSystemActivationTime = currentDay + " " + Starting_Hour_System_Activation.state.toString + ":" + Starting_Minute_System_Activation.state.toString + ":00"
-    stoppingSystemActivationTime = currentDay + " " + Stopping_Hour_System_Activation.state.toString + ":" + Stopping_Minute_System_Activation.state.toString + ":00"
-    startingClosingDate = datos.parse(startingClosingTime)
-    stoppingClosingDate = datos.parse(stoppingClosingTime)
-    startingActivationDate = datos.parse(startingSystemActivationTime)
-    stoppingActivationDate = datos.parse(stoppingSystemActivationTime)        //tutto questo serve per inserire in queste ultime variabili le date di start e di stop del sistema
-	sendCommand(gf_slave_to_aq_master, ON)
-	
 
+	liv_Pm10= GF_Living_AqPm10
+	ba_Pm10= GF_Bathroom_AqPm10
+	ki_Pm10= GF_Kitchen_AqPm10
+
+	sendCommand(gf_slave_to_aq_master, ON)
 end
 //&&&&&&&&&&&&&&&&&
 rule "Monitor_m_ff"
@@ -104,6 +103,17 @@ when
 	Time cron "0/30 0/1 * 1/1 * ? *" //ogni 30 secondi attua il controllo di monitoring (change to "0 0/1 * * * ?" to fire every minute) 
 then
 	sendCommand(start_m_ff, OFF)
+
+	cor_Pm10= FF_Corridor_AqPm10
+
+
+	sendCommand(ff_slave_to_aq_master, ON)
+end
+
+rule "Aggregator_m_gf_m_ff_a_AQ"
+when
+	Item gf_slaveff_slave_to_aq_master received update ON
+then
 	//prendiamo l'orario corrente e salviamolo per i confronti che svolgeremo nell'analysis
 	datos = new SimpleDateFormat ("yyyy-MM-dd HH:mm:ss")
     currentDate = new Date()
@@ -116,13 +126,9 @@ then
     stoppingClosingDate = datos.parse(stoppingClosingTime)
     startingActivationDate = datos.parse(startingSystemActivationTime)
     stoppingActivationDate = datos.parse(stoppingSystemActivationTime)        //tutto questo serve per inserire in queste ultime variabili le date di start e di stop del sistema
-	sendCommand(ff_slave_to_aq_master, ON)
-end
+	
+	ex_Pm10= (SimAqi_Pm10.state as DecimalType).doubleValue
 
-rule "Aggregator_m_gf_m_ff_a_AQ"
-when
-	Item gf_slaveff_slave_to_aq_master received update ON
-then
 	sendCommand(gf_slave_to_aq_master, OFF)
 	sendCommand(ff_slave_to_aq_master, OFF)
 	sendCommand(start_a_AQ, ON)
@@ -134,79 +140,127 @@ when
 	Item start_a_AQ received command ON
 then
 	sendCommand(start_a_AQ, OFF)
+	ex_Pm10= (SimAqi_Pm10.state as DecimalType).doubleValue  //qualità dell'aria esterna
 
 	//vediamo di analizzare in che fascia oraria siamo, se ad esempio siamo in quella di
 	if ((currentDate.after(startingClosingDate) && currentDate.before(stoppingClosingDate))){
 		forza=2  //chiudere
-		sendCommand(start_p_AQ, ON)
+	
 	}
 	else if (currentDate.after(startingActivationDate) && currentDate.before(stoppingActivationDate)){
 		forza=1  //aprire
-		sendCommand(start_p_AQ, ON)
 	}
 	//se non sono nelle fasce orarie di chiusura o apertura ricomincio a monitorare
 	else {
 		forza=0
-		sendCommand(start_m_ff, ON)
-		sendCommand(start_m_gf,ON)
+	
 	}
-//-----------&&&&&&&&&&&---------- qui devo fare i controlli della qualità dell'aria
+
 	if (forza==0){
-		if(cbQuality>=                                ){
-			adaptation_required_a_AQ = true
+		//vediamo se è necessario agire al piano terra
+		if ((liv_Pm10 > ex_Pm10 and GF_Living_Window.state=="CLOSE") or
+		(ba_Pm10 > ex_Pm10 and  GF_Bathroom_Window.state=="CLOSE") or
+		(ki_Pm10 ex_Pm10 and GF_Kitchen_Window.state=="CLOSE") or
+		(liv_Pm10 < ex_Pm10 and GF_Living_Window.state=="OPEN") or
+		(ba_Pm10 < ex_Pm10 and  GF_Bathroom_Window.state=="OPEN") or
+		(ki_Pm10 < ex_Pm10 and GF_Kitchen_Window.state=="OPEN") {
+
+			adaptation_required_ff= true
 		}
-		else {
-			adaptation_required_a_AQ = false
-		}
-		if(adaptation_required_a_AQ){
-			sendCommand(start_p_AQ, ON)
-		}
-		//uscita senza necessità di adattarsi
-		else{
-			sendCommand(start_m_gf, ON)
-			sendCommand(start_m_ff, ON)
+
+		//ora per il primo piano
+		if ((cor_Pm10 > ex_Pm10 and (FF_ChildrenRoom_Window.state=="CLOSE" or FF_Bedroom_Window.state=="CLOSE")) or 
+		(cor_Pm10 < ex_Pm10 and (FF_ChildrenRoom_Window.state=="OPEN" or FF_Bedroom_Window.state=="OPEN"))) {
+			
+			adaptation_required_ff= true
+	}
+	else{
+		if (forza==1) {
+			if ((GF_Kitchen_Window.state=="CLOSE" or 
+			GF_Living_Window.state=="CLOSE" or 
+			GF_Living_Window.state=="CLOSE")) {
+
+				adaptation_required_gf= true
+			}
+
+			if (FF_Bedroom_Window.state=="CLOSE" or
+				FF_ChildrenRoom_Window.state=="CLOSE") {
+
+				adaptation_required_ff= true
+			}
+		} else if (forza==2) {
+			if ((GF_Kitchen_Window.state=="OPEN" or 
+			GF_Living_Window.state=="OPEN" or 
+			GF_Living_Window.state=="OPEN")) {
+			adaptation_required_gf= true
+			}
+
+			if (FF_Bedroom_Window.state == "OPEN" or
+			FF_ChildrenRoom_Window.state=="OPEN") {
+				adaptation_required_ff= true
+			}
 		}
 	}
+	if(adaptation_required_gf || adaptation_required_ff){
+		sendCommand(start_p_aq, ON)
+	}
+	else{
+		sendCommand(start_m_gf, ON)
+		sendCommand(start_m_ff, ON)
+	}
+
 end
 
 rule "Plan_p_AQ"
 when
 	Item start_p_AQ received command ON
 then
-if (forza==1 or forza==2){
-	sendCommand(start_p_AQ, OFF)
-	sendCommand(start_e_ff, ON)
-	sendCommand(start_e_gf, ON)
-}
-//altrimenti fai il planning normale
-else{    
-
-
-
-	sendCommand(start_p_AQ, OFF)
-	sendCommand(start_e_gf, ON)
-	sendCommand(start_e_ff, ON)
-}
+if (adaptation_required_gf) {
+		adaptation_required_gf= false	
+		sendCommand(start_e_gf, ON)
+	}
+	if (adaptation_required_ff) {
+		adaptation_required_ff= false
+		sendCommand(start_e_ff, ON)
+	}
 end
 
 rule "Exec_e_gf"
 when
 	Item start_e_gf received command ON
 then
-	if (forza==1){
-		GF_Living_Window.postUpdate("OPEN")
-    	GF_Kitchen_Window.postUpdate("OPEN")
-    	GF_Bathroom_Window.postUpdate("OPEN")
+	if (forza!=0) {
+		if (forza==1){
+			GF_Living_Window.postUpdate("OPEN")
+    		GF_Kitchen_Window.postUpdate("OPEN")
+    		GF_Bathroom_Window.postUpdate("OPEN")
+		}
+		if(forza==2){
+			GF_Living_Window.postUpdate("CLOSED")
+    	    GF_Kitchen_Window.postUpdate("CLOSED")
+    	    GF_Bathroom_Window.postUpdate("CLOSED")
+		}
 	}
-	if(forza==2){
-		GF_Living_Window.postUpdate("CLOSED")
-        GF_Kitchen_Window.postUpdate("CLOSED")
-        GF_Bathroom_Window.postUpdate("CLOSED")
+	else{
+		if (liv_Pm10 > ex_Pm10 and GF_Living_Window.state=="CLOSE") 
+			GF_Living_Window.postUpdate("OPEN")
+		
+		if (ba_Pm10 > ex_Pm10 and  GF_Bathroom_Window.state=="CLOSE")
+			GF_Kitchen_Window.postUpdate("OPEN")
+
+		if (ki_Pm10 ex_Pm10 and GF_Kitchen_Window.state=="CLOSE")
+			GF_Bathroom_Window.postUpdate("OPEN")
+
+		if (liv_Pm10 < ex_Pm10 and GF_Living_Window.state=="OPEN")
+			GF_Living_Window.postUpdate("CLOSED")
+
+		if (ba_Pm10 < ex_Pm10 and  GF_Bathroom_Window.state=="OPEN")
+			GF_Kitchen_Window.postUpdate("CLOSED")
+
+		if (ki_Pm10 < ex_Pm10 and GF_Kitchen_Window.state=="OPEN")
+			GF_Bathroom_Window.postUpdate("CLOSED")
+
 	}
-
-
-
-
 	sendCommand(start_e_gf, OFF)
 	sendCommand(start_m_gf, ON)
 end
@@ -215,18 +269,27 @@ rule "Exec_e_ff"
 when
 	Item start_e_ff received command ON
 then
-	if (forza==1){
-		FF_Bedroom_Window.postUpdate("OPEN")
-    	FF_ChildrenRoom_Window.postUpdate("OPEN")
+	if (forza!=0) {
+		if (forza==1) {
+			FF_Bedroom_Window.postUpdate("OPEN")
+			FF_ChildrenRoom_Window.postUpdate("OPEN")
+		}
+		else if (forza==2) {
+			FF_Bedroom_Window.postUpdate("CLOSED")
+			FF_ChildrenRoom_Window.postUpdate("CLOSED")
+		}
+	} else {
+		if (cor_Pm10 > ex_Pm10 and FF_ChildrenRoom_Window.state=="CLOSE" or FF_Bedroom_Window.state=="CLOSE") {
+			FF_Bedroom_Window.postUpdate("OPEN")
+			FF_ChildrenRoom_Window.postUpdate("OPEN")
+		}
+
+		if (cor_Pm10 < ex_Pm10 and (FF_ChildrenRoom_Window.state=="OPEN" or FF_Bedroom_Window.state=="OPEN")) {
+			FF_Bedroom_Window.postUpdate("OPEN")
+			FF_ChildrenRoom_Window.postUpdate("OPEN")
+		}
+		
 	}
-	if(forza==2){
-		FF_Bedroom_Window.postUpdate("CLOSED")
-        FF_ChildrenRoom_Window.postUpdate("CLOSED")
-	}
-	forza=0 						//ogni volta che si riavvia il sistema rimette il flag "forza a 0"    
-
-
-
 	sendCommand(start_e_ff, OFF)
 	sendCommand(start_m_ff, ON)
 end
