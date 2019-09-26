@@ -40,7 +40,6 @@ when
     Item Starting_Minute_System_Activation changed or
     Item Stopping_Hour_System_Activation changed or
     Item Stopping_Minute_System_Activation changed
-
 then
 	start_m_gf.sendCommand(ON)
 	start_m_ff.sendCommand(ON)
@@ -285,4 +284,3 @@ then
 		}
 	}
 end
-
