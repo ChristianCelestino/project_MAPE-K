@@ -149,4 +149,3 @@ then
 	sendCommand(start_e_gf, ON)
 	sendCommand(start_e_ff, ON)
 end
-
