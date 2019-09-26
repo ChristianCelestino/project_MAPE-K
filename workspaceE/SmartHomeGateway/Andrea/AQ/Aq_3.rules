@@ -94,9 +94,9 @@ when
 then
 	sendCommand(start_m_gf, OFF)
 	sendCommand(gf_slave_to_aq_master, ON)
-	liv_Pm10= GF_Living_AqPm10
-	ba_Pm10= GF_Bathroom_AqPm10
-	ki_Pm10= GF_Kitchen_AqPm10
+	liv_Pm10= GF_Living_AqPm10 as Number
+	ba_Pm10= GF_Bathroom_AqPm10 as Number
+	ki_Pm10= GF_Kitchen_AqPm10 as Number
 end
 
 rule "Monitor_m_ff"
@@ -107,7 +107,7 @@ when
 then
 	sendCommand(start_m_ff, OFF)
 	sendCommand(ff_slave_to_aq_master, ON)
-	cor_Pm10= FF_Corridor_AqPm10
+	cor_Pm10= FF_Corridor_AqPm10 as Number
 end
 
 rule "Aggregator_m_gf_m_ff_a_aq"
@@ -118,7 +118,7 @@ then
 	sendCommand(ff_slave_to_aq_master, OFF)
 	sendCommand(start_a_aq, ON)
 
-	ex_Pm10= (SimAqi_Pm10.state as DecimalType).doubleValue
+	ex_Pm10= SimAqi_Pm10.state as Number
 	datos = new SimpleDateFormat ("yyyy-MM-dd HH:mm:ss")
     currentDate = new Date()
     currentDay = Calendar.getInstance().get(Calendar.YEAR).toString() + "-" + (Calendar.getInstance().get(Calendar.MONTH)+1).toString() + "-" + Calendar.getInstance().get(Calendar.DAY_OF_MONTH).toString()
