@@ -8,18 +8,18 @@ val Number Hysteresis = 0.3
 rule "Reach Target LivingRoom Zone1 GF"
 when 
     Item Managing_System_Active changed or 
-    Item GF_Temperature_Setpoint changed or
+    Item GF_Temperature_Setpoint changed or                                                                             // si attiva quando si cambia il valore di temperatura desiderato, quando viene attivato il sistema e ogni 5 secondi
     Time cron "0/5 0/1 * 1/1 * ? *" //Fire the control every 5 seconds
 then 
-    if(Managing_System_Active.state == ON){
-        var Number Current_Temp=GF_LZone1_Temperature.state as Number
-        var Number Target_Temp= GF_Temperature_Setpoint.state as Number 
+    if(Managing_System_Active.state == ON){                                                                             //se è attivo
+        var Number Current_Temp=GF_LZone1_Temperature.state as Number                                                   //salva la temperatura corrente
+        var Number Target_Temp= GF_Temperature_Setpoint.state as Number                                                 //salva la temperatura desiderata dall'utente
     
-        if(Heating_Mode.state!='STOP' &&(Current_Temp < (Target_Temp-Hysteresis)) && GF_Living_heating1.state!=ON){
-            GF_Living_heating1.sendCommand(ON)
+        if(Heating_Mode.state!='STOP' &&(Current_Temp < (Target_Temp-Hysteresis)) && GF_Living_heating1.state!=ON){     //se il riscaldamento non è in stop e la temperatura corrente è più bassa di quella desiderata più l'isteresi e il riscaldamento nelle stanze non è attivo
+            GF_Living_heating1.sendCommand(ON)                                                                          //manda il comanda di riscaldare la stanza
         }   
-        if(Heating_Mode.state!='STOP' && (Current_Temp > (Target_Temp+Hysteresis)) && GF_Living_heating1.state!=OFF)
-            GF_Living_heating1.sendCommand(OFF)
+        if(Heating_Mode.state!='STOP' && (Current_Temp > (Target_Temp+Hysteresis)) && GF_Living_heating1.state!=OFF)    //se il riscaldamento non è in stop e la temperatura corrente è maggiore di quella esterna più l'isteresi e il riscaldamento non è spento
+            GF_Living_heating1.sendCommand(OFF)                                                                         //manda il comando di spegnere il riscaldamento
     }
     
 end
