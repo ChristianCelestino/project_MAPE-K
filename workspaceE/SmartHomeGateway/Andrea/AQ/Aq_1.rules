@@ -90,7 +90,8 @@ when
 	Item start_m_gf received command ON or     // AGGIORNAMENTO OGNI 30 SEC???
 	Item GF_Bathroom_AqPm10 changed or
 	Item GF_Living_AqPm10 changed or
-	Item GF_Kitchen_AqPm10 changed 
+	Item GF_Kitchen_AqPm10 changed or
+	Item SimAqi_Pm10 changed
 then
 	sendCommand(start_m_gf, OFF)
 	sendCommand(gf_slave_to_aq_master, ON)
@@ -101,8 +102,9 @@ end
 
 rule "Monitor_m_ff"
 when
-	Item start_m_ff received command ON or   // AGGIORNAMENTO OGNI £= SEC???
-	Item FF_Corridor_AqPm10 changed 
+	Item start_m_ff received command ON or   // AGGIORNAMENTO OGNI 30 SEC???
+	Item FF_Corridor_AqPm10 changed or
+	Item SimAqi_Pm10 changed
 then
 	sendCommand(start_m_ff, OFF)
 	sendCommand(ff_slave_to_aq_master, ON)
