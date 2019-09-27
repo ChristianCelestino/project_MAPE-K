@@ -32,14 +32,14 @@ var Number forza 		//Varibile per la forzatura delle finestre: 0 (inattivo), 1 (
 rule "StartLoop_MySmartHomeAQ"
 when
 	System started or
-	Item Starting_Hour_Windows_Closing changed or
+/*	Item Starting_Hour_Windows_Closing changed or
     Item Starting_Minute_Windows_Closing changed or
     Item Stopping_Hour_Windows_Closing changed or
     Item Stopping_Minute_Windows_Closing changed or
     Item Starting_Hour_System_Activation changed or
     Item Starting_Minute_System_Activation changed or
     Item Stopping_Hour_System_Activation changed or
-    Item Stopping_Minute_System_Activation changed
+    Item Stopping_Minute_System_Activation changed*/
 then
 	start_m_gf.sendCommand(ON)
 	start_m_ff.sendCommand(ON)
@@ -151,7 +151,7 @@ then
 	if (forza==0) {
 		if ((liv_Pm10 > ex_Pm10 and GF_Living_Window.state== CLOSED) or
 		(ba_Pm10 > ex_Pm10 and  GF_Bathroom_Window.state==CLOSED) or
-		(ki_Pm10 ex_Pm10 and GF_Kitchen_Window.state==CLOSED) or
+		(ki_Pm10 > ex_Pm10 and GF_Kitchen_Window.state==CLOSED) or
 		(liv_Pm10 < ex_Pm10 and GF_Living_Window.state==OPEN) or
 		(ba_Pm10 < ex_Pm10 and  GF_Bathroom_Window.state==OPEN) or
 		(ki_Pm10 < ex_Pm10 and GF_Kitchen_Window.state==OPEN) {
@@ -242,7 +242,7 @@ then
 		if (ba_Pm10 > ex_Pm10 and  GF_Bathroom_Window.state==CLOSED)
 			GF_Kitchen_Window.postUpdate(OPEN)
 
-		if (ki_Pm10 ex_Pm10 and GF_Kitchen_Window.state==CLOSED)
+		if (ki_Pm10 > ex_Pm10 and GF_Kitchen_Window.state==CLOSED)
 			GF_Bathroom_Window.postUpdate(OPEN)
 
 		if (liv_Pm10 < ex_Pm10 and GF_Living_Window.state==OPEN)
