@@ -1,0 +1,93 @@
+var boolean adaptation_required_gf
+var boolean adaptation_required_ff
+var Number stanza
+rule "StartLoop_MySmartHomeHC"
+when
+	System started and
+    Item GF_Temperature_Setpoint changed                                                                             // si attiva quando si cambia il valore di temperatura desiderato, quando viene attivato il sistema e ogni 5 secondi
+then
+    if (Managing_System_Active.state == ON) Managing_System_Active.postUpdate(OFF)
+	start_a_hc.sendCommand(OFF)
+	start_p_hc.sendCommand(OFF)
+	start_m_gf.sendCommand(ON)
+	start_e_gf.sendCommand(OFF)
+	start_m_ff.sendCommand(ON)
+	start_e_ff.sendCommand(OFF)
+	adaptation_required_ff = false
+	adaptation_required_gf = false
+end
+
+
+rule "Monitor_m_gf"
+when
+	Item start_m_gf received command ON and
+	Time cron "0/5 0/1 * 1/1 * ? *" //Fire the control every 5 seconds
+then
+	var Number Current_Tempz1=GF_LZone1_Temperature.state as Number   //salva la temperatura corrente della z1 gf
+	var Number Current_Tempz2=GF_LZone2_Temperature.state as Number	//salva la temperatura corrente della z2 gf
+	var Number Current_TempBath=GF_Bathroom_Temperature.state as Number
+	var Number Current_TempKit=GF_Kitchen_Temperature.state as Number
+
+	sendCommand(start_m_gf, OFF)
+	sendCommand(gf_slave_to_hc_master, ON)
+end
+
+rule "Monitor_m_ff"
+when
+	Item start_m_ff received command ON and
+    Time cron "0/5 0/1 * 1/1 * ? *" //Fire the control every 5 seconds
+then
+	var Number Current_TempBed=FF_Bedroom_Temperature.state as Number
+	var Number Current_TempChi=FF_Childrenroom_Temperature.state as Number
+
+	sendCommand(start_m_ff, OFF)
+	sendCommand(ff_slave_to_hc_master, ON)
+end
+
+rule "Aggregator_m_gf_m_ff_a_hc"
+when
+	Item gf_slaveff_slave_to_hc_master received update ON
+then
+    var Number Target_Temp= GF_Temperature_Setpoint.state as Number 
+	sendCommand(gf_slave_to_hc_master, OFF)
+	sendCommand(ff_slave_to_hc_master, OFF)
+	sendCommand(start_a_hc, ON)
+end
+
+
+rule "Analyze_a_hc"
+when
+	Item start_a_hc received command ON
+then
+	sendCommand(start_a_hc, OFF)
+	if(((Math::random * 100.0).intValue + 1) <= 50 ){
+		adaptation_required_a_hc = true
+	}
+	else {
+		adaptation_required_a_hc = false
+	}
+	if(adaptation_required_a_hc){
+		sendCommand(start_p_hc, ON)
+	}
+	else{
+		sendCommand(start_m_gf, ON)
+		sendCommand(start_m_ff, ON)
+	}
+end
+
+rule "Plan_p_hc"
+when
+	Item start_p_hc received command ON
+then
+	sendCommand(start_p_hc, OFF)
+	sendCommand(start_e_gf, ON)
+	sendCommand(start_e_ff, ON)
+end
+
+rule "Exec_e_gf"
+when
+	Item start_e_gf received command ON
+then
+	sendCommand(start_e_gf, OFF)
+	sendCommand(start_m_gf, ON)
+end
