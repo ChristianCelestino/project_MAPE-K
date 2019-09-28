@@ -149,44 +149,44 @@ then
 
 // Air_Quality
 	if (forza==0) {
-		if ((liv_Pm10 > ex_Pm10 and GF_Living_Window.state== "CLOSED") or
-		(ba_Pm10 > ex_Pm10 and  GF_Bathroom_Window.state=="CLOSED") or
-		(ki_Pm10 > ex_Pm10 and GF_Kitchen_Window.state=="CLOSED") or
-		(liv_Pm10 < ex_Pm10 and GF_Living_Window.state=="OPEN") or
-		(ba_Pm10 < ex_Pm10 and  GF_Bathroom_Window.state=="OPEN") or
-		(ki_Pm10 < ex_Pm10 and GF_Kitchen_Window.state=="OPEN") {
+		if ((liv_Pm10 > ex_Pm10 and GF_Living_Window.state== CLOSED) or
+		(ba_Pm10 > ex_Pm10 and  GF_Bathroom_Window.state==CLOSED) or
+		(ki_Pm10 > ex_Pm10 and GF_Kitchen_Window.state==CLOSED) or
+		(liv_Pm10 < ex_Pm10 and GF_Living_Window.state==OPEN) or
+		(ba_Pm10 < ex_Pm10 and  GF_Bathroom_Window.state==OPEN) or
+		(ki_Pm10 < ex_Pm10 and GF_Kitchen_Window.state==OPEN) {
 
 			adaptation_required_ff= true
 		}
 
-		if ((cor_Pm10 > ex_Pm10 and (FF_ChildrenRoom_Window.state=="CLOSED" or FF_Bedroom_Window.state=="CLOSED")) or 
-		(cor_Pm10 < ex_Pm10 and (FF_ChildrenRoom_Window.state=="OPEN" or FF_Bedroom_Window.state=="OPEN"))) {
+		if ((cor_Pm10 > ex_Pm10 and (FF_ChildrenRoom_Window.state==CLOSED or FF_Bedroom_Window.state==CLOSED)) or 
+		(cor_Pm10 < ex_Pm10 and (FF_ChildrenRoom_Window.state==OPEN or FF_Bedroom_Window.state==OPEN))) {
 			
 			adaptation_required_ff= true
 		}
 	} else { 						 // Forzatura
 		if (forza==1) {
-			if ((GF_Kitchen_Window.state=="CLOSED" or 
-			GF_Living_Window.state=="CLOSED" or 
-			GF_Living_Window.state=="CLOSED")) {
+			if ((GF_Kitchen_Window.state==CLOSED or 
+			GF_Living_Window.state==CLOSED or 
+			GF_Living_Window.state==CLOSED)) {
 
 				adaptation_required_gf= true
 			}
 
-			if (FF_Bedroom_Window.state=="CLOSED" or
-				FF_ChildrenRoom_Window.state=="CLOSED") {
+			if (FF_Bedroom_Window.state==CLOSED or
+				FF_ChildrenRoom_Window.state==CLOSED) {
 
 				adaptation_required_ff= true
 			}
 		} else if (forza==2) {
-			if ((GF_Kitchen_Window.state=="OPEN" or 
-			GF_Living_Window.state=="OPEN" or 
-			GF_Living_Window.state=="OPEN")) {
+			if ((GF_Kitchen_Window.state==OPEN or 
+			GF_Living_Window.state==OPEN or 
+			GF_Living_Window.state==OPEN)) {
 			adaptation_required_gf= true
 			}
 
-			if (FF_Bedroom_Window.state=="OPEN" or
-			FF_ChildrenRoom_Window.state=="OPEN") {
+			if (FF_Bedroom_Window.state==OPEN or
+			FF_ChildrenRoom_Window.state==OPEN) {
 				adaptation_required_ff= true
 			}
 		}
@@ -236,22 +236,22 @@ then
             GF_Bathroom_Window.postUpdate("CLOSED")
 		}
 	} else {
-		if (liv_Pm10 > ex_Pm10 and GF_Living_Window.state=="CLOSED") 
+		if (liv_Pm10 > ex_Pm10 and GF_Living_Window.state==CLOSED) 
 			GF_Living_Window.postUpdate("OPEN")
 		
-		if (ba_Pm10 > ex_Pm10 and  GF_Bathroom_Window.state=="CLOSED")
+		if (ba_Pm10 > ex_Pm10 and  GF_Bathroom_Window.state==CLOSED)
 			GF_Kitchen_Window.postUpdate("OPEN")
 
-		if (ki_Pm10 > ex_Pm10 and GF_Kitchen_Window.state=="CLOSED")
+		if (ki_Pm10 > ex_Pm10 and GF_Kitchen_Window.state==CLOSED)
 			GF_Bathroom_Window.postUpdate("OPEN")
 
-		if (liv_Pm10 < ex_Pm10 and GF_Living_Window.state=="OPEN")
+		if (liv_Pm10 < ex_Pm10 and GF_Living_Window.state==OPEN)
 			GF_Living_Window.postUpdate("CLOSED")
 
-		if (ba_Pm10 < ex_Pm10 and  GF_Bathroom_Window.state=="OPEN")
+		if (ba_Pm10 < ex_Pm10 and  GF_Bathroom_Window.state==OPEN)
 			GF_Kitchen_Window.postUpdate("CLOSED")
 
-		if (ki_Pm10 < ex_Pm10 and GF_Kitchen_Window.state=="OPEN")
+		if (ki_Pm10 < ex_Pm10 and GF_Kitchen_Window.state==OPEN)
 			GF_Bathroom_Window.postUpdate("CLOSED")
 	}
 end
@@ -273,12 +273,12 @@ then
 			FF_ChildrenRoom_Window.postUpdate("CLOSED")
 		}
 	} else {
-		if (cor_Pm10 > ex_Pm10 and FF_ChildrenRoom_Window.state=="CLOSED" or FF_Bedroom_Window.state=="CLOSED") {
+		if (cor_Pm10 > ex_Pm10 and FF_ChildrenRoom_Window.state==CLOSED or FF_Bedroom_Window.state==CLOSED) {
 			FF_Bedroom_Window.postUpdate("OPEN")
 			FF_ChildrenRoom_Window.postUpdate("OPEN")
 		}
 
-		if (cor_Pm10 < ex_Pm10 and (FF_ChildrenRoom_Window.state=="OPEN" or FF_Bedroom_Window.state=="OPEN")) {
+		if (cor_Pm10 < ex_Pm10 and (FF_ChildrenRoom_Window.state==OPEN or FF_Bedroom_Window.state==OPEN)) {
 			FF_Bedroom_Window.postUpdate("OPEN")
 			FF_ChildrenRoom_Window.postUpdate("OPEN")
 		}
