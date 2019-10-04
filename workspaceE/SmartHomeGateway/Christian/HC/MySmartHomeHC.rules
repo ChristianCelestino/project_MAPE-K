@@ -1,5 +1,9 @@
-var boolean adaptation_required_gf
-var boolean adaptation_required_ff
+var boolean adaptation_required_gf_z1
+var boolean adaptation_required_gf_z2
+var boolean adaptation_required_gf_kit
+var boolean adaptation_required_gf_bath
+var boolean adaptation_required_ff_chil
+var boolean adaptation_required_ff_bed
 var Number stanza
 rule "StartLoop_MySmartHomeHC"
 when
@@ -38,7 +42,7 @@ when
     Time cron "0/5 0/1 * 1/1 * ? *" //Fire the control every 5 seconds
 then
 	var Number Current_TempBed=FF_Bedroom_Temperature.state as Number
-	var Number Current_TempChi=FF_Childrenroom_Temperature.state as Number
+	var Number Current_TempChil=FF_Childrenroom_Temperature.state as Number
 
 	sendCommand(start_m_ff, OFF)
 	sendCommand(ff_slave_to_hc_master, ON)
@@ -60,16 +64,39 @@ when
 	Item start_a_hc received command ON
 then
 	sendCommand(start_a_hc, OFF)
-	if(((Math::random * 100.0).intValue + 1) <= 50 ){
-		adaptation_required_a_hc = true
+
+	if(Heating_Mode.state!='STOP' &&(Current_Tempz1 < (Target_Temp-Hysteresis)) && GF_Living_heating1.state!=ON){     //se il riscaldamento non è in stop e la temperatura corrente è più bassa di quella desiderata più l'isteresi e il riscaldamento nelle stanze non è attivo
+		adaptation_required_gf_z1=true
+		adaptation_required_a_hc=true
+	}
+	if(Heating_Mode.state!='STOP' &&(Current_Tempz2 < (Target_Temp-Hysteresis)) && GF_Living_heating2.state!=ON){     //se il riscaldamento non è in stop e la temperatura corrente è più bassa di quella desiderata più l'isteresi e il riscaldamento nelle stanze non è attivo
+		adaptation_required_gf_z2=true
+		adaptation_required_a_hc=true
+	}
+	if(Heating_Mode.state!='STOP' &&(Current_TempBath < (Target_Temp-Hysteresis)) && GF_Bathroom_heating.state!=ON){     //se il riscaldamento non è in stop e la temperatura corrente è più bassa di quella desiderata più l'isteresi e il riscaldamento nelle stanze non è attivo
+		adaptation_required_gf_bath=true
+		adaptation_required_a_hc=true
+	}
+	if(Heating_Mode.state!='STOP' &&(Current_TempBed < (Target_Temp-Hysteresis)) && FF_Bedroom_heating.state!=ON){     //se il riscaldamento non è in stop e la temperatura corrente è più bassa di quella desiderata più l'isteresi e il riscaldamento nelle stanze non è attivo
+		adaptation_required_gf_bed=true
+		adaptation_required_a_hc=true
+	}
+	if(Heating_Mode.state!='STOP' &&(Current_TempKit < (Target_Temp-Hysteresis)) && GF_Kitchen_heating.state!=ON){     //se il riscaldamento non è in stop e la temperatura corrente è più bassa di quella desiderata più l'isteresi e il riscaldamento nelle stanze non è attivo
+		adaptation_required_gf_kit=true
+		adaptation_required_a_hc=true
+	}
+	if(Heating_Mode.state!='STOP' &&(Current_TempChil < (Target_Temp-Hysteresis)) && FF_Childrenroom_heating.state!=ON){     //se il riscaldamento non è in stop e la temperatura corrente è più bassa di quella desiderata più l'isteresi e il riscaldamento nelle stanze non è attivo
+		adaptation_required_gf_chil=true
+		adaptation_required_a_hc=true
 	}
 	else {
 		adaptation_required_a_hc = false
 	}
-	if(adaptation_required_a_hc){
+
+	if(adaptation_required_a_hc){   //se è richiesto adattamento vado al planning
 		sendCommand(start_p_hc, ON)
 	}
-	else{
+	else{							//se non è richiesto l'adattamento
 		sendCommand(start_m_gf, ON)
 		sendCommand(start_m_ff, ON)
 	}
@@ -79,6 +106,7 @@ rule "Plan_p_hc"
 when
 	Item start_p_hc received command ON
 then
+	
 	sendCommand(start_p_hc, OFF)
 	sendCommand(start_e_gf, ON)
 	sendCommand(start_e_ff, ON)
