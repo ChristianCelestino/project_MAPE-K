@@ -1,21 +1,6 @@
 var boolean adaptation_required_gf
 var boolean adaptation_required_ff
 
-//support variables
-var String currentHour
-var String currentMinute
-var String startingClosingTime
-var String stoppingClosingTime
-var String startingSystemActivationTime
-var String stoppingSystemActivationTime
-var String currentDay
-var Date startingClosingDate
-var Date stoppingClosingDate
-var Date startingActivationDate
-var Date stoppingActivationDate
-var Date currentDate
-var DateFormat datos
-
 rule "StartLoop_MySmartHomeAQ"
 when
 	System started
@@ -29,7 +14,7 @@ then
 	if (Managing_System_Active.state == ON) Managing_System_Active.postUpdate(OFF)
 end
 
-rule "Analyze_a_aq"
+/*rule "Analyze_a_aq"
 when
 	Item start_a_aq received command ON
 then
@@ -165,5 +150,5 @@ then
 	sendCommand(start_p_aq, OFF)
 	sendCommand(start_e_gf, ON)
 	sendCommand(start_e_ff, ON)
-end
+end*/
 
