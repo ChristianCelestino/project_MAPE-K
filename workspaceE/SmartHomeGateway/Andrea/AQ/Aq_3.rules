@@ -39,7 +39,7 @@ when
     Item Starting_Hour_System_Activation changed or
     Item Starting_Minute_System_Activation changed or
     Item Stopping_Hour_System_Activation changed or
-    Item Stopping_Minute_System_Activation changed
+    Item Stopping_Minute_System_Activation changed or
 then
 	start_m_gf.sendCommand(ON)
 	start_m_ff.sendCommand(ON)
@@ -90,7 +90,8 @@ when
 	Item GF_Bathroom_AqPm10 changed or
 	Item GF_Living_AqPm10 changed or
 	Item GF_Kitchen_AqPm10 changed or
-	Item SimAqi_Pm10 changed
+	Item SimAqi_Pm10 changed or  
+	Time cron "0/30 0/1 * 1/1 * ? *" //Fire every 30 seconds (change to "0 0/1 * * * ?" to fire every minute) 
 then
 	sendCommand(start_m_gf, OFF)
 	sendCommand(gf_slave_to_aq_master, ON)
@@ -103,7 +104,8 @@ rule "Monitor_m_ff"
 when
 	Item start_m_ff received command ON or   // AGGIORNAMENTO OGNI 30 SEC???
 	Item FF_Corridor_AqPm10 changed or
-	Item SimAqi_Pm10 changed
+	Item SimAqi_Pm10 changed or 
+	Time cron "0/30 0/1 * 1/1 * ? *" //Fire every 30 seconds (change to "0 0/1 * * * ?" to fire every minute) 
 then
 	sendCommand(start_m_ff, OFF)
 	sendCommand(ff_slave_to_aq_master, ON)
