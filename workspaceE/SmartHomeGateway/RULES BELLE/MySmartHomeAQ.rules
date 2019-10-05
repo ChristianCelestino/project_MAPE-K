@@ -5,12 +5,14 @@ rule "StartLoop_MySmartHomeAQ"
 when
 	System started
 then
-	start_a_aq.sendCommand(OFF)
+	/*start_a_aq.sendCommand(OFF)
 	start_p_aq.sendCommand(OFF)
 	start_m_gf.sendCommand(ON)
 	start_e_gf.sendCommand(OFF)
 	start_m_ff.sendCommand(ON)
 	start_e_ff.sendCommand(OFF)
+	adaptation_required_gf= false
+	adaptation_required_ff= false*/
 	if (Managing_System_Active.state == ON) Managing_System_Active.postUpdate(OFF)
 end
 
