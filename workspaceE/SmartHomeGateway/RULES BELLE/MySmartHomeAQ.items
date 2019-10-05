@@ -1,0 +1,19 @@
+Group aq_master "aq_master"
+
+Switch start_a_aq "a_aq" (aq_master)
+Switch start_p_aq "p_aq" (aq_master)
+
+Group gf_slave "gf_slave"
+
+Switch start_m_gf "m_gf" (gf_slave)
+Switch start_e_gf "e_gf" (gf_slave)
+
+Group ff_slave "ff_slave"
+
+Switch start_m_ff "m_ff" (ff_slave)
+Switch start_e_ff "e_ff" (ff_slave)
+
+Group:Switch:OR(ON, OFF) gf_slaveff_slave_to_aq_master "gf_slaveff_slave_to_aq_master"
+
+Switch gf_slave_to_aq_master "gf_slave_to_aq_master" (gf_slaveff_slave_to_aq_master)
+Switch ff_slave_to_aq_master "ff_slave_to_aq_master" (gf_slaveff_slave_to_aq_master)
