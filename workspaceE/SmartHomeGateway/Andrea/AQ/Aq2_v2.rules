@@ -109,6 +109,15 @@ rule "Exec_e_ff"
 when
 	Item start_e_ff received command ON
 then
+	if (cor_Pm10 > ex_Pm10 && FF_ChildrenRoom_Window.state==CLOSED || FF_Bedroom_Window.state==CLOSED) {
+			FF_Bedroom_Window.postUpdate(OPEN)
+			FF_ChildrenRoom_Window.postUpdate(OPEN)
+		}
+
+		if (cor_Pm10 < ex_Pm10 && (FF_ChildrenRoom_Window.state==OPEN || FF_Bedroom_Window.state==OPEN)) {
+			FF_Bedroom_Window.postUpdate(OPEN)
+			FF_ChildrenRoom_Window.postUpdate(OPEN)
+		}
 	sendCommand(start_e_ff, OFF)
 	sendCommand(start_m_ff, ON)
 end
@@ -117,6 +126,23 @@ rule "Exec_e_gf"
 when
 	Item start_e_gf received command ON
 then
+	if (liv_Pm10 > ex_Pm10 && GF_Living_Window.state==CLOSED) 
+			GF_Living_Window.postUpdate(OPEN)
+		
+		if (ba_Pm10 > ex_Pm10 &&  GF_Bathroom_Window.state==CLOSED)
+			GF_Kitchen_Window.postUpdate(OPEN)
+
+		if (ki_Pm10 > ex_Pm10 && GF_Kitchen_Window.state==CLOSED)
+			GF_Bathroom_Window.postUpdate(OPEN)
+
+		if (liv_Pm10 < ex_Pm10 && GF_Living_Window.state==OPEN)
+			GF_Living_Window.postUpdate(CLOSED)
+
+		if (ba_Pm10 < ex_Pm10 &&  GF_Bathroom_Window.state==OPEN)
+			GF_Kitchen_Window.postUpdate(CLOSED)
+
+		if (ki_Pm10 < ex_Pm10 && GF_Kitchen_Window.state==OPEN)
+			GF_Bathroom_Window.postUpdate(CLOSED)
 	sendCommand(start_e_gf, OFF)
 	sendCommand(start_m_gf, ON)
 end
