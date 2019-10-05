@@ -95,8 +95,7 @@ then
 	sendCommand(start_p_aq, OFF)
 	if (adaptation_required_gf) {
 		// deve pianificare cosa fare, in base ai dati elaborati deve decidere quali finestre chiudee e quali aprire
-		
-
+	
 		adaptation_required_gf= false	
 		sendCommand(start_e_gf, ON)
 	}
@@ -121,14 +120,3 @@ then
 	sendCommand(start_e_gf, OFF)
 	sendCommand(start_m_gf, ON)
 end
-	
-/*	if (cor_Pm10 > ex_Pm10 and FF_ChildrenRoom_Window.state==CLOSED or FF_Bedroom_Window.state==CLOSED) {
-		FF_Bedroom_Window.postUpdate(OPEN)
-		FF_ChildrenRoom_Window.postUpdate(OPEN)
-	}
-
-	if (cor_Pm10 < ex_Pm10 and (FF_ChildrenRoom_Window.state==OPEN or FF_Bedroom_Window.state==OPEN)) {
-		FF_Bedroom_Window.postUpdate(OPEN)
-		FF_ChildrenRoom_Window.postUpdate(OPEN)
-	}*/
-

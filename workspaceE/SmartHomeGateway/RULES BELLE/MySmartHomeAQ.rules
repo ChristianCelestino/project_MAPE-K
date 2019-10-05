@@ -16,7 +16,7 @@ then
 	if (Managing_System_Active.state == ON) Managing_System_Active.postUpdate(OFF)
 end
 
-/*rule "Analyze_a_aq"
+rule "Analyze_a_aq"
 when
 	Item start_a_aq received command ON
 then
@@ -152,5 +152,5 @@ then
 	sendCommand(start_p_aq, OFF)
 	sendCommand(start_e_gf, ON)
 	sendCommand(start_e_ff, ON)
-end*/
+end
 
