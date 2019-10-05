@@ -85,13 +85,33 @@ then
 	}
 end
 
+
+// TO DO: ho iniziato qui, ho trovato una sezione "PLAN_e_aq" e l'ho tolta cambiandola in Exec_e_ff
+
 rule "Plan_p_aq"
 when
 	Item start_p_aq received command ON
 then
 	sendCommand(start_p_aq, OFF)
-	sendCommand(start_e_gf, ON)
-	sendCommand(start_e_ff, ON)
+	if (adaptation_required_gf) {
+		// deve pianificare cosa fare, in base ai dati elaborati deve decidere quali finestre chiudee e quali aprire
+		
+
+		adaptation_required_gf= false	
+		sendCommand(start_e_gf, ON)
+	}
+	if (adaptation_required_ff) {
+		adaptation_required_ff= false
+		sendCommand(start_e_ff, ON)
+	}
+end
+
+rule "Exec_e_ff"
+when
+	Item start_e_ff received command ON
+then
+	sendCommand(start_e_ff, OFF)
+	sendCommand(start_m_ff, ON)
 end
 
 rule "Exec_e_gf"
@@ -101,13 +121,6 @@ then
 	sendCommand(start_e_gf, OFF)
 	sendCommand(start_m_gf, ON)
 end
-
-rule "Plan_e_ff"
-when
-	Item start_e_ff received command ON
-then
-	sendCommand(start_e_ff, OFF)
-	sendCommand(start_m_ff, ON)
 	
 /*	if (cor_Pm10 > ex_Pm10 and FF_ChildrenRoom_Window.state==CLOSED or FF_Bedroom_Window.state==CLOSED) {
 		FF_Bedroom_Window.postUpdate(OPEN)
@@ -119,4 +132,3 @@ then
 		FF_ChildrenRoom_Window.postUpdate(OPEN)
 	}*/
 
-end
