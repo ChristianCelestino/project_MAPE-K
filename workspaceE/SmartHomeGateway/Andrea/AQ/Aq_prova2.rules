@@ -66,17 +66,30 @@ rule "Analyze_a_aq"
 when
  Item start_a_aq received command ON
 then
- if ((cor_Pm10 > ex_Pm10 && (FF_ChildrenRoom_Window.state==CLOSED || FF_Bedroom_Window.state==CLOSED)) || 
-  (cor_Pm10 < ex_Pm10 && (FF_ChildrenRoom_Window.state==OPEN || FF_Bedroom_Window.state==OPEN))) {
-  sendCommand(start_p_aq, ON)
- } 
- else{
-  sendCommand(start_m_gf, ON)
-  sendCommand(start_m_ff, ON)
- }
+    if ((liv_Pm10 > ex_Pm10 && GF_Living_Window.state==CLOSED) ||
+		(ba_Pm10 > ex_Pm10 &&  GF_Bathroom_Window.state==CLOSED) ||
+		(ki_Pm10 > ex_Pm10 && GF_Kitchen_Window.state==CLOSED) ||
+		(liv_Pm10 < ex_Pm10 && GF_Living_Window.state==OPEN) ||
+		(ba_Pm10 < ex_Pm10 &&  GF_Bathroom_Window.state==OPEN) ||
+		(ki_Pm10 < ex_Pm10 && GF_Kitchen_Window.state==OPEN)) {
+
+			adaptation_required_gf= true
+	}
+
+    if ((cor_Pm10 > ex_Pm10 && (FF_ChildrenRoom_Window.state==CLOSED || FF_Bedroom_Window.state==CLOSED)) || 
+    (cor_Pm10 < ex_Pm10 && (FF_ChildrenRoom_Window.state==OPEN || FF_Bedroom_Window.state==OPEN))) {
+
+        adaptation_required_ff= true
+    } 
+
+    if(adaptation_required_gf || adaptation_required_ff){
+		sendCommand(start_p_aq, ON)
+	}
+	else{
+		sendCommand(start_m_gf, ON)
+		sendCommand(start_m_ff, ON)
+	}
 end
-
-
 
 rule "Plan_p_aq"
 when
