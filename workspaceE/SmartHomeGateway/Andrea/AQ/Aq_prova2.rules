@@ -1,33 +1,66 @@
+var boolean adaptation_required_gf
+var boolean adaptation_required_ff
+
 var Number ex_Pm10
+var Number liv_Pm10
+var Number ki_Pm10
+var Number ba_Pm10
 var Number cor_Pm10
+var Number liv
+var Number bat
 var Number cor
+
 
 rule "StartLoop_MySmartHomeAQ"
 when
  System started
 then
- start_a_aq.sendCommand(OFF)
- start_p_aq.sendCommand(OFF)
- start_m_ff.sendCommand(ON)
- start_e_ff.sendCommand(OFF)
- FF_Bedroom_Window.postUpdate(OPEN)
- FF_ChildrenRoom_Window.postUpdate(CLOSED)
- cor=0
-  if (Managing_System_Active.state == ON) Managing_System_Active.postUpdate(OFF)
+    start_a_aq.sendCommand(OFF)
+    start_p_aq.sendCommand(OFF)
+    start_m_gf.sendCommand(ON)
+    start_e_gf.sendCommand(OFF)
+    start_m_ff.sendCommand(ON)
+    start_e_ff.sendCommand(OFF)
+    adaptation_required_gf= false
+    adaptation_required_ff= false
+    cor=0
+    bat=0
+    liv=0
+    if (Managing_System_Active.state == ON) Managing_System_Active.postUpdate(OFF)
 end
- 
+
+rule "Monitor_m_gf"
+when
+	Item start_m_gf received command ON or
+	Time cron "0/30 0/1 * 1/1 * ? *" 
+then
+	sendCommand(start_m_gf, OFF)
+	sendCommand(gf_slave_to_aq_master, ON)
+	liv_Pm10= GF_Living_AqPm10.state as Number
+	ba_Pm10= GF_Bathroom_AqPm10.state as Number
+	ki_Pm10= GF_Kitchen_AqPm10.state as Number
+end
+
 rule "Monitor_m_ff"
 when
- Item start_m_ff received command ON or 
- Time cron "0/30 0/1 * 1/1 * ? *" 
+    Item start_m_ff received command ON or 
+    Time cron "0/30 0/1 * 1/1 * ? *" 
 then
- sendCommand(start_m_ff, OFF)
- sendCommand(start_a_aq, ON)
- ex_Pm10= SimAqi_Pm10.state as Number
- cor_Pm10= FF_Corridor_AqPm10.state as Number
+    sendCommand(start_m_ff, OFF)
+    sendCommand(ff_slave_to_aq_master, ON)
+    cor_Pm10= FF_Corridor_AqPm10.state as Number
 end
 
-
+rule "Aggregator_m_gf_m_ff_a_aq"
+when
+	Item ff_slave_to_aq_master received command ON or
+    Item gf_slave_to_aq_master received command ON
+then
+	sendCommand(gf_slave_to_aq_master, OFF)
+	sendCommand(ff_slave_to_aq_master, OFF)
+	sendCommand(start_a_aq, ON)
+	ex_Pm10= SimAqi_Pm10.state as Number
+end
 
 rule "Analyze_a_aq"
 when
