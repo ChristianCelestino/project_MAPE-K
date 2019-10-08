@@ -5,15 +5,17 @@ rule "StartLoop_MySmartHomeAQ"
 when
 	System started
 then
+/*
 	start_a_aq.sendCommand(OFF)
-	start_p_aq.sendCommand(OFF)
+    start_p_aq.sendCommand(OFF)
 	start_m_gf.sendCommand(ON)
 	start_e_gf.sendCommand(OFF)
 	start_m_ff.sendCommand(ON)
 	start_e_ff.sendCommand(OFF)
-	if (Managing_System_Active.state == ON) Managing_System_Active.postUpdate(OFF)
+	*/
+    if (Managing_System_Active.state == OFF) Managing_System_Active.postUpdate(ON)
 end
-
+/*
 rule "Analyze_a_aq"
 when
 	Item start_a_aq received command ON
@@ -142,3 +144,4 @@ then
 	sendCommand(start_e_ff, ON)
 end
 
+*/
