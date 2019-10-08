@@ -15,6 +15,8 @@ rule "StartLoop_MySmartHomeAQ"
 when
  System started
 then
+FF_Bedroom_Window.postUpdate(CLOSED)
+    FF_ChildrenRoom_Window.postUpdate(CLOSED)
     start_a_aq.sendCommand(OFF)
     start_p_aq.sendCommand(OFF)
     start_m_gf.sendCommand(ON)
@@ -26,8 +28,9 @@ then
     cor=0
     bat=0
     liv=0
-    if (Managing_System_Active.state == ON) Managing_System_Active.postUpdate(OFF)
+    if (Managing_System_Active.state == OFF) Managing_System_Active.postUpdate(ON)
 end
+
 
 rule "Monitor_m_gf"
 when
@@ -41,6 +44,7 @@ then
 	ki_Pm10= GF_Kitchen_AqPm10.state as Number
 end
 
+
 rule "Monitor_m_ff"
 when
     Item start_m_ff received command ON or 
@@ -50,6 +54,7 @@ then
     sendCommand(ff_slave_to_aq_master, ON)
     cor_Pm10= FF_Corridor_AqPm10.state as Number
 end
+
 
 rule "Aggregator_m_gf_m_ff_a_aq"
 when
@@ -62,48 +67,84 @@ then
 	ex_Pm10= SimAqi_Pm10.state as Number
 end
 
+
 rule "Analyze_a_aq"
 when
  Item start_a_aq received command ON
 then
-    if ((liv_Pm10 > ex_Pm10 && GF_Living_Window.state==CLOSED) ||
+
+ if ((cor_Pm10 > ex_Pm10 && (FF_ChildrenRoom_Window.state==CLOSED || FF_Bedroom_Window.state==CLOSED)) || 
+        (cor_Pm10 < ex_Pm10 && (FF_ChildrenRoom_Window.state==OPEN || FF_Bedroom_Window.state==OPEN))) {
+        adaptation_required_ff=true
+ } 
+ if ((liv_Pm10 > ex_Pm10 && GF_Living_Window.state==CLOSED) ||
 		(ba_Pm10 > ex_Pm10 &&  GF_Bathroom_Window.state==CLOSED) ||
 		(ki_Pm10 > ex_Pm10 && GF_Kitchen_Window.state==CLOSED) ||
 		(liv_Pm10 < ex_Pm10 && GF_Living_Window.state==OPEN) ||
 		(ba_Pm10 < ex_Pm10 &&  GF_Bathroom_Window.state==OPEN) ||
 		(ki_Pm10 < ex_Pm10 && GF_Kitchen_Window.state==OPEN)) {
 
-			adaptation_required_gf= true
+		adaptation_required_gf= true
 	}
-
-    if ((cor_Pm10 > ex_Pm10 && (FF_ChildrenRoom_Window.state==CLOSED || FF_Bedroom_Window.state==CLOSED)) || 
-    (cor_Pm10 < ex_Pm10 && (FF_ChildrenRoom_Window.state==OPEN || FF_Bedroom_Window.state==OPEN))) {
-
-        adaptation_required_ff= true
-    } 
-
-    if(adaptation_required_gf || adaptation_required_ff){
-		sendCommand(start_p_aq, ON)
-	}
-	else{
-		sendCommand(start_m_gf, ON)
-		sendCommand(start_m_ff, ON)
-	}
+if(adaptation_required_gf || adaptation_required_ff){
+	sendCommand(start_p_aq, ON)
+}
+ else{
+  sendCommand(start_m_gf, ON)
+  sendCommand(start_m_ff, ON)
+ }
 end
 
 rule "Plan_p_aq"
 when
  Item start_p_aq received command ON
 then
+
  sendCommand(start_p_aq, OFF)
- if(cor_Pm10 > ex_Pm10 && (FF_ChildrenRoom_Window.state==CLOSED || FF_Bedroom_Window.state==CLOSED))
-  cor=1
- if(cor_Pm10 < ex_Pm10 && (FF_ChildrenRoom_Window.state==OPEN || FF_Bedroom_Window.state==OPEN))
-  cor=2
+    if(adaptation_required_gf==true){
+    if(liv_Pm10 > ex_Pm10 && GF_Living_Window.state==CLOSED){
+		liv=1 	//apri living
+        GF_Living_Window.postUpdate(OPEN)
+    }
+	if (liv_Pm10 < ex_Pm10 && GF_Living_Window.state==OPEN){
+		liv=2	//chiudi living
+        GF_Living_Window.postUpdate(CLOSED)
+    }
+	if (ba_Pm10 > ex_Pm10 &&  GF_Bathroom_Window.state==CLOSED){
+		bat=1
+        GF_Bathroom_Window.postUpdate(OPEN)
+    }
+	if(ba_Pm10 < ex_Pm10 &&  GF_Bathroom_Window.state==OPEN){
+		bat=2
+        GF_Bathroom_Window.postUpdate(CLOSED)
+    }
+	if(ki_Pm10 > ex_Pm10 && GF_Kitchen_Window.state==CLOSED){
+		kit=1
+        GF_Kitchen_Window.postUpdate(OPEN)
+    }
+	if(ki_Pm10 < ex_Pm10 && GF_Kitchen_Window.state==OPEN){
+		kit=2
+        GF_Kitchen_Window.postUpdate(CLOSED)
+    }
+ }
+ /*
+ if(adaptation_required_ff==true){
+    if(cor_Pm10 > ex_Pm10 && (FF_ChildrenRoom_Window.state==CLOSED || FF_Bedroom_Window.state==CLOSED)){
+    cor=1
+    FF_Bedroom_Window.postUpdate(OPEN)
+    FF_ChildrenRoom_Window.postUpdate(OPEN)
+    }
+    if(cor_Pm10 < ex_Pm10 && (FF_ChildrenRoom_Window.state==OPEN || FF_Bedroom_Window.state==OPEN)){
+    cor=2
+    FF_Bedroom_Window.postUpdate(CLOSED)
+    FF_ChildrenRoom_Window.postUpdate(CLOSED)
+    }
+ }
  sendCommand(start_e_ff, ON)
 end
 
 
+/*
 rule "Exec_e_ff"
 when
  Item start_e_ff received command ON
@@ -121,3 +162,4 @@ then
  sendCommand(start_e_ff, OFF)
  sendCommand(start_m_ff, ON)
 end
+*/
