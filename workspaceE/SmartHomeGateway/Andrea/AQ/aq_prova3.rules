@@ -1,6 +1,7 @@
 
 //QUESTO CODICE FUNZIONA, è STATO TESTATO DA ENTRAMBI I PC DA CHRISTIAN IL 8/1
-//2019var boolean adaptation_required_gf
+//2019
+var boolean adaptation_required_gf
 var boolean adaptation_required_ff
 
 var Number ex_Pm10
