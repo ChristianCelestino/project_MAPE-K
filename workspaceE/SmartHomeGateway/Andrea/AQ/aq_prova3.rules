@@ -17,13 +17,6 @@ rule "StartLoop_MySmartHomeAQ"
 when
  System started
 then
-FF_Bedroom_Window.postUpdate(CLOSED)
-FF_ChildrenRoom_Window.postUpdate(CLOSED)
-
-GF_Living_Window.postUpdate(CLOSED)
-GF_Bathroom_Window.postUpdate(CLOSED)
-GF_Kitchen_Window.postUpdate(CLOSED)
-
     start_a_aq.sendCommand(OFF)
     start_p_aq.sendCommand(OFF)
     start_m_gf.sendCommand(ON)
