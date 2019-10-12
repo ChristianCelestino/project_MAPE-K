@@ -1,5 +1,6 @@
 
-//QUESTO CODICE FUNZIONA, è STATO TESTATO DA ENTRAMBI I PC DA CHRISTIAN IL 8/1, Visonato dalla Scandurra OK
+//QUESTO CODICE FUNZIONA, è STATO TESTATO DA ENTRAMBI I PC DA CHRISTIAN IL 8/1, Visionato dalla Scandurra OK
+//2019
 var boolean adaptation_required_gf
 var boolean adaptation_required_ff
 
@@ -27,11 +28,10 @@ then
     adaptation_required_ff= false
     cor=0
     bat=0
-    kit=0
     liv=0
+    kit=0
     if (Managing_System_Active.state == ON) Managing_System_Active.postUpdate(OFF)
 end
-
 
 rule "Monitor_m_gf"
 when
@@ -46,7 +46,6 @@ then
     ex_Pm10= SimAqi_Pm10.state as Number
 end
 
-
 rule "Monitor_m_ff"
 when
     Item start_m_ff received command ON or 
@@ -56,7 +55,6 @@ then
     sendCommand(ff_slave_to_aq_master, ON)
     cor_Pm10= FF_Corridor_AqPm10.state as Number
 end
-
 
 rule "Aggregator_m_gf_m_ff_a_aq"
 when
@@ -68,7 +66,6 @@ then
 	sendCommand(start_a_aq, ON)
 end
 
-
 rule "Analyze_a_aq"
 when
  Item start_a_aq received command ON
@@ -79,15 +76,16 @@ then
 		(liv_Pm10 < ex_Pm10 && GF_Living_Window.state==OPEN) ||
 		(ba_Pm10 < ex_Pm10 &&  GF_Bathroom_Window.state==OPEN) ||
 		(ki_Pm10 < ex_Pm10 && GF_Kitchen_Window.state==OPEN)) {
+
 		adaptation_required_gf= true
 	}
 
     if ((cor_Pm10 > ex_Pm10 && (FF_ChildrenRoom_Window.state==CLOSED || FF_Bedroom_Window.state==CLOSED)) || 
             (cor_Pm10 < ex_Pm10 && (FF_ChildrenRoom_Window.state==OPEN || FF_Bedroom_Window.state==OPEN))) {
+
             adaptation_required_ff=true
-            
     } 
-    
+
     if(adaptation_required_gf || adaptation_required_ff){
         sendCommand(start_p_aq, ON)
     }
@@ -96,7 +94,6 @@ then
         sendCommand(start_m_ff, ON)
     }
 end
-
 
 rule "Plan_p_aq"
 when
@@ -135,8 +132,6 @@ then
     }
     sendCommand(start_e_ff, ON)
 end
-
-
 
 rule "Exec_e_ff"
 when

@@ -1,7 +1,9 @@
 var boolean adaptation_required_gf
 var boolean adaptation_required_ff
 
-var Number 
+var Number T_lv1                                       
+var Number T_lv2  
+var Number Target_Temp
 
 rule "StartLoop_MySmartHomeHC"
 when
@@ -15,14 +17,20 @@ then
 	start_e_ff.sendCommand(OFF)
 	adaptation_required_gf= false
 	adaptation_required_ff= false
+	if (Managing_System_Active.state == OFF) Managing_System_Active.postUpdate(ON)
 end
 
 rule "Monitor_m_gf"
 when
-	Item start_m_gf received command ON
+	Item start_m_gf received command ON or
+	Item GF_Temperature_Setpoint changed or                                                                            
+    Time cron "0/5 0/1 * 1/1 * ? *" //Fire the control every 5 seconds
 then
 	sendCommand(start_m_gf, OFF)
 	sendCommand(gf_slave_to_hc_master, ON)
+	T_lv1= GF_LZone1_Temperature.state as Number               
+	T_lv2= GF_LZone2_Temperature.state as Number                                
+    Target_Temp= GF_Temperature_Setpoint.state as Number
 end
 
 rule "Monitor_m_ff"
