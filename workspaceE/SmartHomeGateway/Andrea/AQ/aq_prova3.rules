@@ -1,6 +1,10 @@
 
+<<<<<<< HEAD
 //QUESTO CODICE FUNZIONA, è STATO TESTATO DA ENTRAMBI I PC DA CHRISTIAN IL 8/1, Visionato dalla Scandurra OK
 //2019
+=======
+//QUESTO CODICE FUNZIONA, è STATO TESTATO DA ENTRAMBI I PC DA CHRISTIAN IL 8/1
+>>>>>>> parent of e9e7728... Revisione AQ finale, e HC 0, crezione HC1
 var boolean adaptation_required_gf
 var boolean adaptation_required_ff
 
@@ -43,7 +47,6 @@ then
 	liv_Pm10= GF_Living_AqPm10.state as Number
 	ba_Pm10= GF_Bathroom_AqPm10.state as Number
 	ki_Pm10= GF_Kitchen_AqPm10.state as Number
-    ex_Pm10= SimAqi_Pm10.state as Number
 end
 
 rule "Monitor_m_ff"
@@ -64,13 +67,20 @@ then
 	sendCommand(gf_slave_to_aq_master, OFF)
 	sendCommand(ff_slave_to_aq_master, OFF)
 	sendCommand(start_a_aq, ON)
+	ex_Pm10= SimAqi_Pm10.state as Number
 end
 
 rule "Analyze_a_aq"
 when
  Item start_a_aq received command ON
 then
-     if ((liv_Pm10 > ex_Pm10 && GF_Living_Window.state==CLOSED) ||
+
+ if ((cor_Pm10 > ex_Pm10 && (FF_ChildrenRoom_Window.state==CLOSED || FF_Bedroom_Window.state==CLOSED)) || 
+        (cor_Pm10 < ex_Pm10 && (FF_ChildrenRoom_Window.state==OPEN || FF_Bedroom_Window.state==OPEN))) {
+        adaptation_required_ff=true
+        
+ } 
+ if ((liv_Pm10 > ex_Pm10 && GF_Living_Window.state==CLOSED) ||
 		(ba_Pm10 > ex_Pm10 &&  GF_Bathroom_Window.state==CLOSED) ||
 		(ki_Pm10 > ex_Pm10 && GF_Kitchen_Window.state==CLOSED) ||
 		(liv_Pm10 < ex_Pm10 && GF_Living_Window.state==OPEN) ||
@@ -79,6 +89,7 @@ then
 
 		adaptation_required_gf= true
 	}
+<<<<<<< HEAD
 
     if ((cor_Pm10 > ex_Pm10 && (FF_ChildrenRoom_Window.state==CLOSED || FF_Bedroom_Window.state==CLOSED)) || 
             (cor_Pm10 < ex_Pm10 && (FF_ChildrenRoom_Window.state==OPEN || FF_Bedroom_Window.state==OPEN))) {
@@ -93,6 +104,15 @@ then
         sendCommand(start_m_gf, ON)
         sendCommand(start_m_ff, ON)
     }
+=======
+if(adaptation_required_gf || adaptation_required_ff){
+	sendCommand(start_p_aq, ON)
+}
+ else{
+  sendCommand(start_m_gf, ON)
+  sendCommand(start_m_ff, ON)
+ }
+>>>>>>> parent of e9e7728... Revisione AQ finale, e HC 0, crezione HC1
 end
 
 rule "Plan_p_aq"
@@ -172,6 +192,6 @@ then
         kit=0
         GF_Kitchen_Window.postUpdate(CLOSED)
     }
-    sendCommand(start_e_ff, OFF)
-    sendCommand(start_m_ff, ON)
+ sendCommand(start_e_ff, OFF)
+ sendCommand(start_m_ff, ON)
 end
