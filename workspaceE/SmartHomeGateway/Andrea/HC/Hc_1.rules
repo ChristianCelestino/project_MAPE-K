@@ -1,4 +1,13 @@
+<<<<<<< HEAD:workspaceE/SmartHomeGateway/Andrea/HC/Hc_1.rules
+var boolean adaptation_required_gf
+var boolean adaptation_required_ff
+
+var Number T_lv1                                       
+var Number T_lv2  
+var Number Target_Temp
+=======
 var boolean adaptation_required_a_hc
+>>>>>>> parent of e9e7728... Revisione AQ finale, e HC 0, crezione HC1:workspaceE/SmartHomeGateway/Andrea/HC/Hc1.rules
 
 rule "StartLoop_MySmartHomeHC"
 when
@@ -10,6 +19,11 @@ then
 	start_e_gf.sendCommand(OFF)
 	start_m_ff.sendCommand(ON)
 	start_e_ff.sendCommand(OFF)
+<<<<<<< HEAD:workspaceE/SmartHomeGateway/Andrea/HC/Hc_1.rules
+	adaptation_required_gf= false
+	adaptation_required_ff= false
+	if (Managing_System_Active.state == OFF) Managing_System_Active.postUpdate(ON)
+=======
 end
 
 rule "Analyze_a_hc"
@@ -30,14 +44,20 @@ then
 		sendCommand(start_m_gf, ON)
 		sendCommand(start_m_ff, ON)
 	}
+>>>>>>> parent of e9e7728... Revisione AQ finale, e HC 0, crezione HC1:workspaceE/SmartHomeGateway/Andrea/HC/Hc1.rules
 end
 
 rule "Monitor_m_gf"
 when
-	Item start_m_gf received command ON
+	Item start_m_gf received command ON or
+	Item GF_Temperature_Setpoint changed or                                                                            
+    Time cron "0/5 0/1 * 1/1 * ? *" //Fire the control every 5 seconds
 then
 	sendCommand(start_m_gf, OFF)
 	sendCommand(gf_slave_to_hc_master, ON)
+	T_lv1= GF_LZone1_Temperature.state as Number               
+	T_lv2= GF_LZone2_Temperature.state as Number                                
+    Target_Temp= GF_Temperature_Setpoint.state as Number
 end
 
 rule "Monitor_m_ff"
