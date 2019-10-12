@@ -1,10 +1,5 @@
-
-<<<<<<< HEAD
-//QUESTO CODICE FUNZIONA, è STATO TESTATO DA ENTRAMBI I PC DA CHRISTIAN IL 8/1, Visionato dalla Scandurra OK
-//2019
-=======
 //QUESTO CODICE FUNZIONA, è STATO TESTATO DA ENTRAMBI I PC DA CHRISTIAN IL 8/1
->>>>>>> parent of e9e7728... Revisione AQ finale, e HC 0, crezione HC1
+//2019
 var boolean adaptation_required_gf
 var boolean adaptation_required_ff
 
@@ -47,6 +42,7 @@ then
 	liv_Pm10= GF_Living_AqPm10.state as Number
 	ba_Pm10= GF_Bathroom_AqPm10.state as Number
 	ki_Pm10= GF_Kitchen_AqPm10.state as Number
+    ex_Pm10= SimAqi_Pm10.state as Number
 end
 
 rule "Monitor_m_ff"
@@ -67,20 +63,13 @@ then
 	sendCommand(gf_slave_to_aq_master, OFF)
 	sendCommand(ff_slave_to_aq_master, OFF)
 	sendCommand(start_a_aq, ON)
-	ex_Pm10= SimAqi_Pm10.state as Number
 end
 
 rule "Analyze_a_aq"
 when
  Item start_a_aq received command ON
 then
-
- if ((cor_Pm10 > ex_Pm10 && (FF_ChildrenRoom_Window.state==CLOSED || FF_Bedroom_Window.state==CLOSED)) || 
-        (cor_Pm10 < ex_Pm10 && (FF_ChildrenRoom_Window.state==OPEN || FF_Bedroom_Window.state==OPEN))) {
-        adaptation_required_ff=true
-        
- } 
- if ((liv_Pm10 > ex_Pm10 && GF_Living_Window.state==CLOSED) ||
+     if ((liv_Pm10 > ex_Pm10 && GF_Living_Window.state==CLOSED) ||
 		(ba_Pm10 > ex_Pm10 &&  GF_Bathroom_Window.state==CLOSED) ||
 		(ki_Pm10 > ex_Pm10 && GF_Kitchen_Window.state==CLOSED) ||
 		(liv_Pm10 < ex_Pm10 && GF_Living_Window.state==OPEN) ||
@@ -89,7 +78,6 @@ then
 
 		adaptation_required_gf= true
 	}
-<<<<<<< HEAD
 
     if ((cor_Pm10 > ex_Pm10 && (FF_ChildrenRoom_Window.state==CLOSED || FF_Bedroom_Window.state==CLOSED)) || 
             (cor_Pm10 < ex_Pm10 && (FF_ChildrenRoom_Window.state==OPEN || FF_Bedroom_Window.state==OPEN))) {
@@ -104,15 +92,6 @@ then
         sendCommand(start_m_gf, ON)
         sendCommand(start_m_ff, ON)
     }
-=======
-if(adaptation_required_gf || adaptation_required_ff){
-	sendCommand(start_p_aq, ON)
-}
- else{
-  sendCommand(start_m_gf, ON)
-  sendCommand(start_m_ff, ON)
- }
->>>>>>> parent of e9e7728... Revisione AQ finale, e HC 0, crezione HC1
 end
 
 rule "Plan_p_aq"
@@ -139,6 +118,7 @@ then
 	    if(ki_Pm10 < ex_Pm10 && GF_Kitchen_Window.state==OPEN){
 		    kit=2
         }
+        sendCommand(start_e_gf, ON)
     }
     if(adaptation_required_ff==true){
         if(cor_Pm10 > ex_Pm10 && (FF_ChildrenRoom_Window.state==CLOSED || FF_Bedroom_Window.state==CLOSED)){
@@ -149,25 +129,15 @@ then
             cor=2
             
         }
+        sendCommand(start_e_ff, ON)
     }
-    sendCommand(start_e_ff, ON)
+    
 end
 
-rule "Exec_e_ff"
+rule "Exec_e_gf"
 when
- Item start_e_ff received command ON
+ Item start_e_gf received command ON
 then
-    if (cor==1) {
-        cor=0
-        FF_Bedroom_Window.postUpdate(OPEN)
-        FF_ChildrenRoom_Window.postUpdate(OPEN)
-    }
-    if (cor==2) {
-        cor=0
-        FF_Bedroom_Window.postUpdate(CLOSED)
-        FF_ChildrenRoom_Window.postUpdate(CLOSED)
-    }
-
     if(liv==1){
         liv=0
         GF_Living_Window.postUpdate(OPEN)
@@ -192,6 +162,24 @@ then
         kit=0
         GF_Kitchen_Window.postUpdate(CLOSED)
     }
- sendCommand(start_e_ff, OFF)
- sendCommand(start_m_ff, ON)
+    sendCommand(start_e_gf, OFF)
+    sendCommand(start_m_gf, ON)
+end
+
+rule "Exec_e_ff"
+when
+    Item start_e_ff received command ON
+then
+    if (cor==1) {
+        cor=0
+        FF_Bedroom_Window.postUpdate(OPEN)
+        FF_ChildrenRoom_Window.postUpdate(OPEN)
+    }
+    if (cor==2) {
+        cor=0
+        FF_Bedroom_Window.postUpdate(CLOSED)
+        FF_ChildrenRoom_Window.postUpdate(CLOSED)
+    }
+    sendCommand(start_e_ff, OFF)
+    sendCommand(start_m_ff, ON)
 end
