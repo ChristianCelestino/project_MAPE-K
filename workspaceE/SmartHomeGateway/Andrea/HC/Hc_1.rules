@@ -8,6 +8,7 @@ var Number T_kit
 var Number T_bed
 var Number T_cb
 var Number Target_Temp
+val Number Hysteresis = 0.3
 
 rule "StartLoop_MySmartHomeHC"
 when
@@ -21,7 +22,7 @@ then
 	start_e_ff.sendCommand(OFF)
 	adaptation_required_gf= false
 	adaptation_required_ff= false
-	if (Managing_System_Active.state == ON) Managing_System_Active.postUpdate(OFF)
+	if (Managing_System_Active.state == OFF) Managing_System_Active.postUpdate(ON)  
 end
 
 rule "Monitor_m_gf"
@@ -41,7 +42,7 @@ end
 
 rule "Monitor_m_ff"
 when
-	Item start_m_ff received command ON 
+	Item start_m_ff received command ON
 then
 	sendCommand(start_m_ff, OFF)
 	sendCommand(ff_slave_to_hc_master, ON)
@@ -64,7 +65,33 @@ when
 	Item start_a_hc received command ON
 then
 	sendCommand(start_a_hc, OFF)
-	
+	if(Heating_Mode.state!='STOP' && (((T_bat < (Target_Temp-Hysteresis)) && GF_Bathroom_heating.state!=ON) ||
+	((T_bat > (Target_Temp+Hysteresis)) && GF_Bathroom_heating.state!=OFF) ||
+	((T_lv1 < (Target_Temp-Hysteresis)) && GF_Living_heating1.state!=ON) ||
+	((T_lv1 > (Target_Temp+Hysteresis)) && GF_Living_heating1.state!=OFF) ||
+	((T_lv2 < (Target_Temp-Hysteresis)) && GF_Living_heating2.state!=ON) ||
+	((T_lv2 > (Target_Temp+Hysteresis)) && GF_Living_heating2.state!=OFF) ||
+	((T_kit < (Target_Temp-Hysteresis)) && GF_Kitchen_heating.state!=ON) ||
+	((T_kit > (Target_Temp+Hysteresis)) && GF_Kitchen_heating.state!=OFF))){
+
+		adaptation_required_gf= true
+	}
+
+	if (Heating_Mode.state!='STOP' && (((T_bed < (Target_Temp-Hysteresis)) && FF_Bedroom_heating.state!=ON) ||
+	((T_bed > (Target_Temp+Hysteresis)) && FF_Bedroom_heating.state!=OFF) ||
+	((T_cb < (Target_Temp-Hysteresis)) && FF_Childrenroom_heating.state!=ON) ||
+	((T_cb > (Target_Temp+Hysteresis)) && FF_Childrenroom_heating.state!=OFF))) {
+
+		adaptation_required_ff= true
+	}
+
+	if(adaptation_required_gf || adaptation_required_ff){
+        sendCommand(start_p_hc, ON)
+    }
+    else{
+        sendCommand(start_m_gf, ON)
+        sendCommand(start_m_ff, ON)
+    }
 end
 
 rule "Plan_p_hc"
