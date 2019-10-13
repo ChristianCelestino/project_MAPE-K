@@ -8,7 +8,14 @@ var Number T_kit
 var Number T_bed
 var Number T_cb
 var Number Target_Temp
+var Number gf_liv1
+var Number gf_liv2
+var Number gf_bat
+var Number gf_kit
+var Number ff_bed
+var Number ff_cb
 val Number Hysteresis = 0.3
+
 
 rule "StartLoop_MySmartHomeHC"
 when
@@ -20,16 +27,22 @@ then
 	start_e_gf.sendCommand(OFF)
 	start_m_ff.sendCommand(ON)
 	start_e_ff.sendCommand(OFF)
+	gf_liv1= 0
+	gf_liv2= 0
+	gf_bat= 0
+	gf_kit= 0
+	ff_bed= 0
+	ff_cb= 0
 	adaptation_required_gf= false
 	adaptation_required_ff= false
-	if (Managing_System_Active.state == OFF) Managing_System_Active.postUpdate(ON)  
+	if (Managing_System_Active.state == ON) Managing_System_Active.postUpdate(OFF)  
 end
 
 rule "Monitor_m_gf"
 when
 	Item start_m_gf received command ON or
 	Item GF_Temperature_Setpoint changed or                                                                            
-    Time cron "0/5 0/1 * 1/1 * ? *" //Fire the control every 5 seconds
+    Time cron "0/30 0/1 * 1/1 * ? *" //Fire the control every 30 seconds
 then
 	sendCommand(start_m_gf, OFF)
 	sendCommand(gf_slave_to_hc_master, ON)
@@ -42,7 +55,9 @@ end
 
 rule "Monitor_m_ff"
 when
-	Item start_m_ff received command ON
+	Item start_m_ff received command ON or
+	Item GF_Temperature_Setpoint changed or                                                                            
+    Time cron "0/30 0/1 * 1/1 * ? *" //Fire the control every 30 seconds
 then
 	sendCommand(start_m_ff, OFF)
 	sendCommand(ff_slave_to_hc_master, ON)
@@ -99,8 +114,51 @@ when
 	Item start_p_hc received command ON
 then
 	sendCommand(start_p_hc, OFF)
-	sendCommand(start_e_gf, ON)
-	sendCommand(start_e_ff, ON)
+	if (adaptation_required_gf) {
+		if ((T_bat < (Target_Temp-Hysteresis)) && GF_Bathroom_heating.state!=ON) {
+			gf_bat= 1
+		}
+		else if ((T_bat > (Target_Temp+Hysteresis)) && GF_Bathroom_heating.state!=OFF) {
+			gf_bat= 2
+		}
+		if ((T_lv1 < (Target_Temp-Hysteresis)) && GF_Living_heating1.state!=ON) {
+			gf_liv1= 1
+		}
+		else if ((T_lv1 > (Target_Temp+Hysteresis)) && GF_Living_heating1.state!=OFF) {
+			gf_liv1= 2
+		}
+		if ((T_lv2 < (Target_Temp-Hysteresis)) && GF_Living_heating2.state!=ON) {
+			gf_liv2= 1
+		}
+		else if ((T_lv2 > (Target_Temp+Hysteresis)) && GF_Living_heating2.state!=OFF) {
+			gf_liv2= 2
+		}
+		if ((T_kit < (Target_Temp-Hysteresis)) && GF_Kitchen_heating.state!=ON) {
+			gf_kit= 1
+		}
+		else if ((T_kit > (Target_Temp+Hysteresis)) && GF_Kitchen_heating.state!=OFF) {
+			gf_kit= 2
+		}
+		adaptation_required_gf= false
+		sendCommand(start_e_gf, ON)
+	}
+
+	if (adaptation_required_ff) {
+		if ((T_bed < (Target_Temp-Hysteresis)) && FF_Bedroom_heating.state!=ON) {
+			ff_bed= 1
+		}
+		else if ((T_bed > (Target_Temp+Hysteresis)) && FF_Bedroom_heating.state!=OFF) {
+			ff_bed= 2
+		}
+		if ((T_cb < (Target_Temp-Hysteresis)) && FF_Childrenroom_heating.state!=ON) {
+			ff_cb= 1
+		}
+		else if ((T_cb > (Target_Temp+Hysteresis)) && FF_Childrenroom_heating.state!=OFF) {
+			ff_cb= 2
+		}
+		adaptation_required_ff= false
+		sendCommand(start_e_ff, ON)
+	}
 end
 
 rule "Exec_e_gf"
