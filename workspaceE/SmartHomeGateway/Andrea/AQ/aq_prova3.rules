@@ -103,19 +103,19 @@ then
         if(liv_Pm10 > ex_Pm10 && GF_Living_Window.state==CLOSED){
 		    liv=1 	//apri living
         }
-	    if (liv_Pm10 < ex_Pm10 && GF_Living_Window.state==OPEN){
+	    else if (liv_Pm10 < ex_Pm10 && GF_Living_Window.state==OPEN){
 		    liv=2	//chiudi living
         }
 	    if (ba_Pm10 > ex_Pm10 &&  GF_Bathroom_Window.state==CLOSED){
 		    bat=1
         }
-	    if(ba_Pm10 < ex_Pm10 &&  GF_Bathroom_Window.state==OPEN){
+	    else if(ba_Pm10 < ex_Pm10 &&  GF_Bathroom_Window.state==OPEN){
 		    bat=2
         }
 	    if(ki_Pm10 > ex_Pm10 && GF_Kitchen_Window.state==CLOSED){
 		    kit=1
         }
-	    if(ki_Pm10 < ex_Pm10 && GF_Kitchen_Window.state==OPEN){
+	    else if(ki_Pm10 < ex_Pm10 && GF_Kitchen_Window.state==OPEN){
 		    kit=2
         }
         sendCommand(start_e_gf, ON)
@@ -125,7 +125,7 @@ then
             cor=1
             
         }
-        if(cor_Pm10 < ex_Pm10 && (FF_ChildrenRoom_Window.state==OPEN || FF_Bedroom_Window.state==OPEN)){
+        else if(cor_Pm10 < ex_Pm10 && (FF_ChildrenRoom_Window.state==OPEN || FF_Bedroom_Window.state==OPEN)){
             cor=2
             
         }
