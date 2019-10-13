@@ -1,13 +1,13 @@
-<<<<<<< HEAD:workspaceE/SmartHomeGateway/Andrea/HC/Hc_1.rules
 var boolean adaptation_required_gf
 var boolean adaptation_required_ff
 
 var Number T_lv1                                       
 var Number T_lv2  
+var Number T_bat
+var Number T_kit
+var Number T_bed
+var Number T_cb
 var Number Target_Temp
-=======
-var boolean adaptation_required_a_hc
->>>>>>> parent of e9e7728... Revisione AQ finale, e HC 0, crezione HC1:workspaceE/SmartHomeGateway/Andrea/HC/Hc1.rules
 
 rule "StartLoop_MySmartHomeHC"
 when
@@ -19,32 +19,9 @@ then
 	start_e_gf.sendCommand(OFF)
 	start_m_ff.sendCommand(ON)
 	start_e_ff.sendCommand(OFF)
-<<<<<<< HEAD:workspaceE/SmartHomeGateway/Andrea/HC/Hc_1.rules
 	adaptation_required_gf= false
 	adaptation_required_ff= false
-	if (Managing_System_Active.state == OFF) Managing_System_Active.postUpdate(ON)
-=======
-end
-
-rule "Analyze_a_hc"
-when
-	Item start_a_hc received command ON
-then
-	sendCommand(start_a_hc, OFF)
-	if(((Math::random * 100.0).intValue + 1) <= 50 ){
-		adaptation_required_a_hc = true
-	}
-	else {
-		adaptation_required_a_hc = false
-	}
-	if(adaptation_required_a_hc){
-		sendCommand(start_p_hc, ON)
-	}
-	else{
-		sendCommand(start_m_gf, ON)
-		sendCommand(start_m_ff, ON)
-	}
->>>>>>> parent of e9e7728... Revisione AQ finale, e HC 0, crezione HC1:workspaceE/SmartHomeGateway/Andrea/HC/Hc1.rules
+	if (Managing_System_Active.state == ON) Managing_System_Active.postUpdate(OFF)
 end
 
 rule "Monitor_m_gf"
@@ -56,25 +33,38 @@ then
 	sendCommand(start_m_gf, OFF)
 	sendCommand(gf_slave_to_hc_master, ON)
 	T_lv1= GF_LZone1_Temperature.state as Number               
-	T_lv2= GF_LZone2_Temperature.state as Number                                
+	T_lv2= GF_LZone2_Temperature.state as Number      
+	T_bat= GF_Bathroom_Temperature.state as Number           
+	T_kit= GF_Kitchen_Temperature.state as Number                
     Target_Temp= GF_Temperature_Setpoint.state as Number
 end
 
 rule "Monitor_m_ff"
 when
-	Item start_m_ff received command ON
+	Item start_m_ff received command ON 
 then
 	sendCommand(start_m_ff, OFF)
 	sendCommand(ff_slave_to_hc_master, ON)
+	T_bed= FF_Bedroom_Temperature.state as Number
+	T_cb= FF_Childrenroom_Temperature.state as Number
 end
 
 rule "Aggregator_m_gf_m_ff_a_hc"
 when
-	Item gf_slaveff_slave_to_hc_master received update ON
+	Item gf_slave_to_hc_master received command ON or
+	Item ff_slave_to_hc_master received command ON 
 then
 	sendCommand(gf_slave_to_hc_master, OFF)
 	sendCommand(ff_slave_to_hc_master, OFF)
 	sendCommand(start_a_hc, ON)
+end
+
+rule "Analyze_a_hc"
+when
+	Item start_a_hc received command ON
+then
+	sendCommand(start_a_hc, OFF)
+	
 end
 
 rule "Plan_p_hc"
@@ -94,78 +84,10 @@ then
 	sendCommand(start_m_gf, ON)
 end
 
-rule "Monitor_m_gf"
-when
-	Item start_m_gf received command ON
-then
-	sendCommand(start_m_gf, OFF)
-	sendCommand(gf_slave_to_hc_master, ON)
-end
-
-rule "Monitor_m_ff"
-when
-	Item start_m_ff received command ON
-then
-	sendCommand(start_m_ff, OFF)
-	sendCommand(ff_slave_to_hc_master, ON)
-end
-
-rule "Aggregator_m_gf_m_ff_a_hc"
-when
-	Item gf_slaveff_slave_to_hc_master received update ON
-then
-	sendCommand(gf_slave_to_hc_master, OFF)
-	sendCommand(ff_slave_to_hc_master, OFF)
-	sendCommand(start_a_hc, ON)
-end
-
-rule "Plan_p_hc"
-when
-	Item start_p_hc received command ON
-then
-	sendCommand(start_p_hc, OFF)
-	sendCommand(start_e_gf, ON)
-	sendCommand(start_e_ff, ON)
-end
-
 rule "Exec_e_ff"
 when
 	Item start_e_ff received command ON
 then
 	sendCommand(start_e_ff, OFF)
 	sendCommand(start_m_ff, ON)
-end
-
-rule "Monitor_m_gf"
-when
-	Item start_m_gf received command ON
-then
-	sendCommand(start_m_gf, OFF)
-	sendCommand(gf_slave_to_hc_master, ON)
-end
-
-rule "Monitor_m_ff"
-when
-	Item start_m_ff received command ON
-then
-	sendCommand(start_m_ff, OFF)
-	sendCommand(ff_slave_to_hc_master, ON)
-end
-
-rule "Aggregator_m_gf_m_ff_a_hc"
-when
-	Item gf_slaveff_slave_to_hc_master received update ON
-then
-	sendCommand(gf_slave_to_hc_master, OFF)
-	sendCommand(ff_slave_to_hc_master, OFF)
-	sendCommand(start_a_hc, ON)
-end
-
-rule "Plan_p_hc"
-when
-	Item start_p_hc received command ON
-then
-	sendCommand(start_p_hc, OFF)
-	sendCommand(start_e_gf, ON)
-	sendCommand(start_e_ff, ON)
 end
