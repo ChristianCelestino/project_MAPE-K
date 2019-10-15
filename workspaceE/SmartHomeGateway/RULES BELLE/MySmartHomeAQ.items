@@ -18,4 +18,4 @@ Group:Switch:OR(ON, OFF) gf_slaveff_slave_to_aq_master "gf_slaveff_slave_to_aq_m
 Switch gf_slave_to_aq_master "gf_slave_to_aq_master" (gf_slaveff_slave_to_aq_master)
 Switch ff_slave_to_aq_master "ff_slave_to_aq_master" (gf_slaveff_slave_to_aq_master)
 
-var Number forzatura
+Number forzatura
