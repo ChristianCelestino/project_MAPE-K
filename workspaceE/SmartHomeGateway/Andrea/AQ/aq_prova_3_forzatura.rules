@@ -78,7 +78,7 @@ then
 		(liv_Pm10 < ex_Pm10 && GF_Living_Window.state==OPEN) ||
 		(ba_Pm10 < ex_Pm10 &&  GF_Bathroom_Window.state==OPEN) ||
 		(ki_Pm10 < ex_Pm10 && GF_Kitchen_Window.state==OPEN)) {
-
+            
 		adaptation_required_gf= true
 	}
 
