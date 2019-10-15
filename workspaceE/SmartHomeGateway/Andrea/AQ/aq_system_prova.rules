@@ -20,17 +20,15 @@ var DateFormat datos
 rule "Managed Windows System"
 
 when
-    Item forzatura==0 and (/////////////////////////////////////////////////////
-        Item Starting_Hour_Windows_Closing changed or
-        Item Starting_Minute_Windows_Closing changed or
-        Item Stopping_Hour_Windows_Closing changed or
-        Item Stopping_Minute_Windows_Closing changed or
-        Item Starting_Hour_System_Activation changed or
-        Item Starting_Minute_System_Activation changed or
-        Item Stopping_Hour_System_Activation changed or
-        Item Stopping_Minute_System_Activation changed or
-        Time cron "0/30 0/1 * 1/1 * ? *" //Fire every 30 seconds (change to "0 0/1 * * * ?" to fire every minute) 
-    )
+    Item Starting_Hour_Windows_Closing changed or
+    Item Starting_Minute_Windows_Closing changed or
+    Item Stopping_Hour_Windows_Closing changed or
+    Item Stopping_Minute_Windows_Closing changed or
+    Item Starting_Hour_System_Activation changed or
+    Item Starting_Minute_System_Activation changed or
+    Item Stopping_Hour_System_Activation changed or
+    Item Stopping_Minute_System_Activation changed or
+    Time cron "0/30 0/1 * 1/1 * ? *" //Fire every 30 seconds (change to "0 0/1 * * * ?" to fire every minute) 
 
 then
     datos = new SimpleDateFormat ("yyyy-MM-dd HH:mm:ss")
@@ -44,25 +42,40 @@ then
     stoppingClosingDate = datos.parse(stoppingClosingTime)
     startingActivationDate = datos.parse(startingSystemActivationTime)
     stoppingActivationDate = datos.parse(stoppingSystemActivationTime)
+    GF_Kitchen_Fire_Alarm.sendCommand(OFF)
+
 
     //forced closing of the windows
-        if ((currentDate.after(startingClosingDate) && currentDate.before(stoppingClosingDate))){
-            GF_Living_Window.postUpdate("CLOSED")
-            GF_Kitchen_Window.postUpdate("CLOSED")
-            GF_Bathroom_Window.postUpdate("CLOSED")
-            FF_Bedroom_Window.postUpdate("CLOSED")
-            FF_ChildrenRoom_Window.postUpdate("CLOSED")
+        if ((currentDate.after(startingClosingDate) && currentDate.before(stoppingClosingDate)))
+            if(forzatura.state==0)
+                forzatura.sendCommand(3)
+
+            if (forzatura.state==1) {
+                 GF_Living_Window.postUpdate("CLOSED")
+                GF_Kitchen_Window.postUpdate("CLOSED")
+                GF_Bathroom_Window.postUpdate("CLOSED")
+                FF_Bedroom_Window.postUpdate("CLOSED")
+                FF_ChildrenRoom_Window.postUpdate("CLOSED")
+            }
+        } 
+        else if (currentDate.after(startingActivationDate) && currentDate.before(stoppingActivationDate)){
+            if(forzatura.state==0)
+                forzatura.sendCommand(3)
+            if (forzatura.state==1) {
+                GF_Living_Window.postUpdate("OPEN")
+                GF_Kitchen_Window.postUpdate("OPEN")
+                GF_Bathroom_Window.postUpdate("OPEN")
+                FF_Bedroom_Window.postUpdate("OPEN")
+                FF_ChildrenRoom_Window.postUpdate("OPEN")
+            }
         }
-        if (currentDate.after(startingActivationDate) && currentDate.before(stoppingActivationDate)){
-            GF_Living_Window.postUpdate("OPEN")
-            GF_Kitchen_Window.postUpdate("OPEN")
-            GF_Bathroom_Window.postUpdate("OPEN")
-            FF_Bedroom_Window.postUpdate("OPEN")
-            FF_ChildrenRoom_Window.postUpdate("OPEN")
-        }
+        else 
+            forzatura.sendCommand(0)
+        
+
     
     
-     if (stoppingClosingDate.before(startingClosingDate)){
+    if (stoppingClosingDate.before(startingClosingDate)){
         Stopping_Hour_Windows_Closing.state = Starting_Hour_Windows_Closing.state
         Stopping_Minute_Windows_Closing.state = Starting_Minute_Windows_Closing.state
     }

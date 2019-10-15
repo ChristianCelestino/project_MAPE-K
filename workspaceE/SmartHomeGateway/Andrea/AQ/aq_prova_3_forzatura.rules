@@ -1,3 +1,6 @@
+//0=no fascia   3= siamo nella fascia e invia richiesta     (AQ system)
+//1=puoi cambiare     2= non puoi        (questo codice)
+
 var boolean adaptation_required_gf
 var boolean adaptation_required_ff
 
@@ -11,6 +14,7 @@ var Number bat
 var Number cor
 var Number kit
 
+
 rule "StartLoop_MySmartHomeAQ"
 when
  System started
@@ -23,13 +27,14 @@ then
     start_e_ff.sendCommand(OFF)
     adaptation_required_gf= false
     adaptation_required_ff= false
+    forzatura.sendCommand(0)
     cor=0
     bat=0
     liv=0
     kit=0
-    if (Managing_System_Active.state == ON) Managing_System_Active.postUpdate(OFF)
+    if (Managing_System_Active.state == OFF) Managing_System_Active.postUpdate(ON)
 end
-
+/*
 rule "Monitor_m_gf"
 when
 	Item start_m_gf received command ON or
@@ -73,13 +78,12 @@ then
 		(liv_Pm10 < ex_Pm10 && GF_Living_Window.state==OPEN) ||
 		(ba_Pm10 < ex_Pm10 &&  GF_Bathroom_Window.state==OPEN) ||
 		(ki_Pm10 < ex_Pm10 && GF_Kitchen_Window.state==OPEN)) {
-        Item forzatura=1 ////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 		adaptation_required_gf= true
 	}
 
     if ((cor_Pm10 > ex_Pm10 && (FF_ChildrenRoom_Window.state==CLOSED || FF_Bedroom_Window.state==CLOSED)) || 
             (cor_Pm10 < ex_Pm10 && (FF_ChildrenRoom_Window.state==OPEN || FF_Bedroom_Window.state==OPEN))) {
-            Item forzatura=1 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
             adaptation_required_ff=true
     } 
@@ -182,3 +186,4 @@ then
     sendCommand(start_e_ff, OFF)
     sendCommand(start_m_ff, ON)
 end
+*/
