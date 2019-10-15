@@ -57,7 +57,7 @@ end
 rule "Monitor_m_ff"
 when
 	Item start_m_ff received command ON or
-	Item GF_Temperature_Setpoint changed or                                                                            
+	Item FF_Temperature_Setpoint changed or                                                                            
     Time cron "0/5 0/1 * 1/1 * ? *" //Fire the control every 30 seconds
 then
 	sendCommand(start_m_ff, OFF)
