@@ -165,6 +165,34 @@ rule "Exec_e_gf"
 when
 	Item start_e_gf received command ON
 then
+	if (gf_liv1==1) {
+		GF_Living_heating1.sendCommand(ON)
+	}
+	else if (gf_liv1==2) {
+		GF_Living_heating1.sendCommand(OFF)
+	}
+	if (gf_liv2==1) {
+		GF_Living_heating2.sendCommand(ON)
+	}
+	else if (gf_liv2==2) {
+		GF_Living_heating2.sendCommand(OFF)
+	}
+	if (gf_kit==1) {
+		GF_Kitchen_heating.sendCommand (ON)
+	}
+	else if (gf_kit==2) {
+		GF_Kitchen_heating.sendCommand (OFF)
+	}
+	if (gf_bat==1) {
+		GF_Bathroom_heating.sendCommand (ON)
+	} 
+	else if (gf_bat==2) {
+		GF_Bathroom_heating.sendCommand(OFF)
+	}
+	gf_liv1= 0
+	gf_liv2= 0
+	gf_kit= 0
+	gf_bat=0
 	sendCommand(start_e_gf, OFF)
 	sendCommand(start_m_gf, ON)
 end
@@ -173,6 +201,20 @@ rule "Exec_e_ff"
 when
 	Item start_e_ff received command ON
 then
+	if (ff_bed==1) {
+		FF_Bedroom_heating.sendCommand(ON)
+	}
+	else if (ff_bed==2) {
+		FF_Bedroom_heating.sendCommand(OFF)
+	}
+	if (ff_cb==1) {
+		FF_Childrenroom_heating.sendCommand (ON)
+	}
+	else if (ff_cb==2) {
+		FF_Childrenroom_heating.sendCommand (OFF)
+	}
+	ff_bed= 0
+	ff_cb= 0
 	sendCommand(start_e_ff, OFF)
 	sendCommand(start_m_ff, ON)
 end
