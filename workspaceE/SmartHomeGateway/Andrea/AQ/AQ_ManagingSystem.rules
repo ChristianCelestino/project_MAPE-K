@@ -27,7 +27,6 @@ then
     start_e_ff.sendCommand(OFF)
     adaptation_required_gf= false
     adaptation_required_ff= false
-    forzatura.sendCommand(1)
     cor=0
     bat=0
     liv=0
@@ -90,11 +89,11 @@ then
 
     if(adaptation_required_gf || adaptation_required_ff){
         sendCommand(start_p_aq, ON)
-        forzatura.state=2
+        forzatura.sendCommand(2)
     }
     else{
         if(forzatura.state==3)
-            forzatura.state=1
+            forzatura.sendCommand(1)
         sendCommand(start_m_gf, ON)
         sendCommand(start_m_ff, ON)
     }

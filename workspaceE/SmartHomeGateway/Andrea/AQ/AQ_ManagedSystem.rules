@@ -42,14 +42,13 @@ then
     stoppingClosingDate = datos.parse(stoppingClosingTime)
     startingActivationDate = datos.parse(startingSystemActivationTime)
     stoppingActivationDate = datos.parse(stoppingSystemActivationTime)
-    GF_Kitchen_Fire_Alarm.sendCommand(OFF)
-
-    if(forzatura.state==1)
-        GF_Bathroom_Fire_Alarm.sendCommand(ON)
-
+    GF_Kitchen_Fire_Alarm.sendCommand(ON)
+    forzatura.sendCommand(0)
     //forced closing of the windows
     if(forzatura.state==0){
+        GF_Bathroom_Fire_Alarm.sendCommand(ON)
         if ((currentDate.after(startingClosingDate) && currentDate.before(stoppingClosingDate))){
+            GF_Living_Fire_Alarm.sendCommand(OFF)
             forzatura.sendCommand(3)  
         } 
         else if ((currentDate.after(startingActivationDate) && currentDate.before(stoppingActivationDate))){
