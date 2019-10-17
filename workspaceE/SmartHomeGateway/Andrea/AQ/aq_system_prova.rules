@@ -44,37 +44,37 @@ then
     stoppingActivationDate = datos.parse(stoppingSystemActivationTime)
     GF_Kitchen_Fire_Alarm.sendCommand(OFF)
 
+    if(forzatura.state==1)
+        GF_Bathroom_Fire_Alarm.sendCommand(ON)
 
     //forced closing of the windows
-        if ((currentDate.after(startingClosingDate) && currentDate.before(stoppingClosingDate)))
-            if(forzatura.state==0)
-                forzatura.sendCommand(3)
-
-            if (forzatura.state==1) {
-                 GF_Living_Window.postUpdate("CLOSED")
-                GF_Kitchen_Window.postUpdate("CLOSED")
-                GF_Bathroom_Window.postUpdate("CLOSED")
-                FF_Bedroom_Window.postUpdate("CLOSED")
-                FF_ChildrenRoom_Window.postUpdate("CLOSED")
-            }
+    if(forzatura.state==0){
+        if ((currentDate.after(startingClosingDate) && currentDate.before(stoppingClosingDate))){
+            forzatura.sendCommand(3)  
         } 
-        else if (currentDate.after(startingActivationDate) && currentDate.before(stoppingActivationDate)){
-            if(forzatura.state==0)
-                forzatura.sendCommand(3)
-            if (forzatura.state==1) {
-                GF_Living_Window.postUpdate("OPEN")
-                GF_Kitchen_Window.postUpdate("OPEN")
-                GF_Bathroom_Window.postUpdate("OPEN")
-                FF_Bedroom_Window.postUpdate("OPEN")
-                FF_ChildrenRoom_Window.postUpdate("OPEN")
-            }
+        else if ((currentDate.after(startingActivationDate) && currentDate.before(stoppingActivationDate))){
+            forzatura.sendCommand(3)   
         }
-        else 
-            forzatura.sendCommand(0)
+    }
+    
+    if (forzatura.state==1 && currentDate.after(startingClosingDate) && currentDate.before(stoppingClosingDate)) {
+            GF_Living_Window.postUpdate("CLOSED")
+            GF_Kitchen_Window.postUpdate("CLOSED")
+            GF_Bathroom_Window.postUpdate("CLOSED")
+            FF_Bedroom_Window.postUpdate("CLOSED")
+            FF_ChildrenRoom_Window.postUpdate("CLOSED")
+        }
         
+    if (forzatura.state==1 && currentDate.after(startingActivationDate) && currentDate.before(stoppingActivationDate)) {
+            GF_Living_Window.postUpdate("OPEN")
+            GF_Kitchen_Window.postUpdate("OPEN")
+            GF_Bathroom_Window.postUpdate("OPEN")
+            FF_Bedroom_Window.postUpdate("OPEN")
+            FF_ChildrenRoom_Window.postUpdate("OPEN")
+    }
+    else 
+        forzatura.sendCommand(0)
 
-    
-    
     if (stoppingClosingDate.before(startingClosingDate)){
         Stopping_Hour_Windows_Closing.state = Starting_Hour_Windows_Closing.state
         Stopping_Minute_Windows_Closing.state = Starting_Minute_Windows_Closing.state

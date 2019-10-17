@@ -27,14 +27,14 @@ then
     start_e_ff.sendCommand(OFF)
     adaptation_required_gf= false
     adaptation_required_ff= false
-    forzatura.sendCommand(0)
+    forzatura.sendCommand(1)
     cor=0
     bat=0
     liv=0
     kit=0
-    if (Managing_System_Active.state == OFF) Managing_System_Active.postUpdate(ON)
+    if (Managing_System_Active.state == ON) Managing_System_Active.postUpdate(OFF)
 end
-/*
+
 rule "Monitor_m_gf"
 when
 	Item start_m_gf received command ON or
@@ -78,7 +78,7 @@ then
 		(liv_Pm10 < ex_Pm10 && GF_Living_Window.state==OPEN) ||
 		(ba_Pm10 < ex_Pm10 &&  GF_Bathroom_Window.state==OPEN) ||
 		(ki_Pm10 < ex_Pm10 && GF_Kitchen_Window.state==OPEN)) {
-            
+
 		adaptation_required_gf= true
 	}
 
@@ -90,8 +90,11 @@ then
 
     if(adaptation_required_gf || adaptation_required_ff){
         sendCommand(start_p_aq, ON)
+        forzatura.state=2
     }
     else{
+        if(forzatura.state==3)
+            forzatura.state=1
         sendCommand(start_m_gf, ON)
         sendCommand(start_m_ff, ON)
     }
@@ -186,4 +189,3 @@ then
     sendCommand(start_e_ff, OFF)
     sendCommand(start_m_ff, ON)
 end
-*/
