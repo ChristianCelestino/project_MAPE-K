@@ -2,7 +2,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Calendar
 import java.text.DateFormat
-//support variables
+//variabili di supporto per raccogliere l'orario corrente e l'orario impostato dall'utente di chiusura e apertura
 var String currentHour
 var String currentMinute
 var String startingClosingTime
@@ -18,8 +18,8 @@ var Date currentDate
 var DateFormat datos
 
 rule "Managed Windows System"
-
 when
+    //il sistema funziona ogni 30 secondi o ogni volta che l'utente modifica gli orari di apertura/chiusura
     Item Starting_Hour_Windows_Closing changed or
     Item Starting_Minute_Windows_Closing changed or
     Item Stopping_Hour_Windows_Closing changed or
@@ -31,6 +31,7 @@ when
     Time cron "0/30 0/1 * 1/1 * ? *" //Fire every 30 seconds (change to "0 0/1 * * * ?" to fire every minute) 
 
 then
+    //raccolgo la data corrente e gli orari impostati dall'utente
     datos = new SimpleDateFormat ("yyyy-MM-dd HH:mm:ss")
     currentDate = new Date()
     currentDay = Calendar.getInstance().get(Calendar.YEAR).toString() + "-" + (Calendar.getInstance().get(Calendar.MONTH)+1).toString() + "-" + Calendar.getInstance().get(Calendar.DAY_OF_MONTH).toString()
@@ -41,29 +42,24 @@ then
     startingClosingDate = datos.parse(startingClosingTime)
     stoppingClosingDate = datos.parse(stoppingClosingTime)
     startingActivationDate = datos.parse(startingSystemActivationTime)
-    stoppingActivationDate = datos.parse(stoppingSystemActivationTime)
-    GF_Kitchen_Fire_Alarm.sendCommand(ON)
-    forzatura.sendCommand(0)
-    //forced closing of the windows
+    stoppingActivationDate = datos.parse(stoppingSystemActivationTime)    
+    //se la forzatura=0 (default) posso richiedere al managing di poter agire se siamo nelle fasce orarie
     if(forzatura.state==0){
-        GF_Bathroom_Fire_Alarm.sendCommand(ON)
         if ((currentDate.after(startingClosingDate) && currentDate.before(stoppingClosingDate))){
-            GF_Living_Fire_Alarm.sendCommand(OFF)
-            forzatura.sendCommand(3)  
+            forzatura.sendCommand(3)  //invio la richiesta al managing (forzatura=3)
         } 
         else if ((currentDate.after(startingActivationDate) && currentDate.before(stoppingActivationDate))){
             forzatura.sendCommand(3)   
         }
     }
-    
+    //se forzatura=1 significa che il managing ha dato il consenso nella gestione delle finestre, dunque agisco se sono nelle fasce orarie 
     if (forzatura.state==1 && currentDate.after(startingClosingDate) && currentDate.before(stoppingClosingDate)) {
             GF_Living_Window.postUpdate("CLOSED")
             GF_Kitchen_Window.postUpdate("CLOSED")
             GF_Bathroom_Window.postUpdate("CLOSED")
             FF_Bedroom_Window.postUpdate("CLOSED")
             FF_ChildrenRoom_Window.postUpdate("CLOSED")
-        }
-        
+        }   
     if (forzatura.state==1 && currentDate.after(startingActivationDate) && currentDate.before(stoppingActivationDate)) {
             GF_Living_Window.postUpdate("OPEN")
             GF_Kitchen_Window.postUpdate("OPEN")
@@ -71,9 +67,10 @@ then
             FF_Bedroom_Window.postUpdate("OPEN")
             FF_ChildrenRoom_Window.postUpdate("OPEN")
     }
-    else 
+    else //se non siamo nelle fasce orarie 
         forzatura.sendCommand(0)
 
+    //se gli orari sono stati invertiti per sbaglio li scambio 
     if (stoppingClosingDate.before(startingClosingDate)){
         Stopping_Hour_Windows_Closing.state = Starting_Hour_Windows_Closing.state
         Stopping_Minute_Windows_Closing.state = Starting_Minute_Windows_Closing.state
