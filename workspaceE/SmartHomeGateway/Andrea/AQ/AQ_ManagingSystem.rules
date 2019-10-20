@@ -19,7 +19,6 @@ rule "StartLoop_MySmartHomeAQ"
 when
  System started
 then
-    //inizializzazione dei flag e delle variabili
     start_a_aq.sendCommand(OFF) 
     start_p_aq.sendCommand(OFF)
     start_m_gf.sendCommand(ON)
@@ -32,34 +31,37 @@ then
     bat=0
     liv=0
     kit=0
-    forzatura.postUpdate(0)
     if (Managing_System_Active.state == ON) Managing_System_Active.postUpdate(OFF)
 end
 
 rule "Monitor_m_gf"
 when
-	Item start_m_gf received command ON or
-	Time cron "0/30 0/1 * 1/1 * ? *" 
+	Item start_m_gf received command ON 
 then
+    FF_Children_Bedroom_Fire_Alarm.sendCommand(ON)
 	sendCommand(start_m_gf, OFF)
-	sendCommand(gf_slave_to_aq_master, ON)
     //raccolta dei dati ricavati dai sensori del piano terra
-	liv_Pm10= GF_Living_AqPm10.state as Number
-	ba_Pm10= GF_Bathroom_AqPm10.state as Number
-	ki_Pm10= GF_Kitchen_AqPm10.state as Number
-    ex_Pm10= SimAqi_Pm10.state as Number
+	liv_Pm10= (GF_Living_AqPm10.state as DecimalType).doubleValue
+	ba_Pm10= (GF_Bathroom_AqPm10.state as DecimalType).doubleValue
+	ki_Pm10= (GF_Kitchen_AqPm10.state as DecimalType).doubleValue
+    ex_Pm10= (SimAqi_Pm10.state as DecimalType).doubleValue
+    sendCommand(gf_slave_to_aq_master, ON)
 end
+
 
 rule "Monitor_m_ff"
 when
-    Item start_m_ff received command ON or 
-    Time cron "0/30 0/1 * 1/1 * ? *" 
+    Item start_m_ff received command ON  
 then
     //raccolta dei dati ricavati dai sensori del piano terra
+    FF_Bedroom_Fire_Alarm.sendCommand(ON)
     sendCommand(start_m_ff, OFF)
+    cor_Pm10= (FF_Corridor_AqPm10.state as DecimalType).doubleValue
+    ex_Pm10=(SimAqi_Pm10.state as DecimalType).doubleValue
+    //ex_Pm10= SimAqi_Pm10.state as Number
     sendCommand(ff_slave_to_aq_master, ON)
-    cor_Pm10= FF_Corridor_AqPm10.state as Number
 end
+
 
 //componente che aggrega le informazioni dei due monitor per passare all'analisi
 rule "Aggregator_m_gf_m_ff_a_aq"
@@ -67,9 +69,8 @@ when
 	Item ff_slave_to_aq_master received command ON or
     Item gf_slave_to_aq_master received command ON
 then
-	sendCommand(gf_slave_to_aq_master, OFF)
-	sendCommand(ff_slave_to_aq_master, OFF)
-	sendCommand(start_a_aq, ON)
+        GF_Living_Fire_Alarm.sendCommand(ON)
+        sendCommand(start_a_aq, ON)
 end
 
 rule "Analyze_a_aq"
@@ -83,21 +84,21 @@ then
 		(liv_Pm10 < ex_Pm10 && GF_Living_Window.state==OPEN) ||
 		(ba_Pm10 < ex_Pm10 &&  GF_Bathroom_Window.state==OPEN) ||
 		(ki_Pm10 < ex_Pm10 && GF_Kitchen_Window.state==OPEN)) {
-
 		adaptation_required_gf= true
+        FF_Bedroom_Fire_Alarm.sendCommand(OFF)
 	}
     //se l'aria dentro è più sporca dell'esterno e le finestre sono chiuse richiedo l'adattamento al primo piano 
-
     if ((cor_Pm10 > ex_Pm10 && (FF_ChildrenRoom_Window.state==CLOSED || FF_Bedroom_Window.state==CLOSED)) || 
             (cor_Pm10 < ex_Pm10 && (FF_ChildrenRoom_Window.state==OPEN || FF_Bedroom_Window.state==OPEN))) {
-
+            FF_Children_Bedroom_Fire_Alarm.sendCommand(OFF)
             adaptation_required_ff=true
     } 
     //se qualche piano richiede l'adattamento chiamiamo il planning e affermiamo la necessità di prevalere sul managed attraverso forzatura=2 che bloccherà 
     //le azioni del managed per permettere al managing di agire indisturbato per gestire l' "emergenza"
     if(adaptation_required_gf || adaptation_required_ff){
-        sendCommand(start_p_aq, ON)
-        forzatura.sendCommand(2)
+            GF_Living_Fire_Alarm.sendCommand(OFF)
+            sendCommand(start_p_aq, ON)
+            forzatura.sendCommand(2)
     }
     //se non è richiesto l'adattamento
     else{
@@ -105,8 +106,14 @@ then
         //lasciamo al managed il controllo delle finestre
         if(forzatura.state==3) 
             forzatura.sendCommand(1)
-        sendCommand(start_m_gf, ON)
-        sendCommand(start_m_ff, ON)
+        if(gf_slave_to_aq_master.state==ON){
+            sendCommand(start_m_gf, ON)
+            sendCommand(gf_slave_to_aq_master, OFF)
+        }
+        if(ff_slave_to_aq_master==ON){
+            sendCommand(start_m_ff, ON)
+            sendCommand(ff_slave_to_aq_master, OFF)
+        }
     }
 end
 
