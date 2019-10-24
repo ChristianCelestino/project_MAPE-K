@@ -26,11 +26,11 @@ rule "StartLoop_MySmartHomeHC"
 when
 	System started
 then
+	start_m_gf.sendCommand(OFF)
+	start_m_ff.sendCommand(ON)
 	start_a_hc.sendCommand(OFF)
 	start_p_hc.sendCommand(OFF)
-	start_m_gf.sendCommand(ON)
 	start_e_gf.sendCommand(OFF)
-	start_m_ff.sendCommand(ON)
 	start_e_ff.sendCommand(OFF)
 	gf_liv1= 0        // Inizializzazione variabili
 	gf_liv2= 0
@@ -65,21 +65,11 @@ rule "Monitor_m_ff"
 when
 	Item start_m_ff received command ON
 then
-	sendCommand(start_m_ff, OFF)
-	sendCommand(ff_slave_to_hc_master, ON)
 	T_bed= FF_Bedroom_Temperature.state as Number   // Aquisizione knowedge 
 	T_cb= FF_Childrenroom_Temperature.state as Number
 	Target_Temp_ff= FF_Temperature_Setpoint.state as Number
-	FF_Bedroom_Fire_Alarm.sendCommand(OFF)
-	GF_Kitchen_Fire_Alarm.sendCommand(OFF)
-	GF_Living_Fire_Alarm.sendCommand(OFF)
-	GF_Bathroom_Fire_Alarm.sendCommand(OFF)
-	FF_Children_Bedroom_Fire_Alarm.sendCommand(OFF)
-	FF_Bedroom_Fire_Alarm.sendCommand(ON)
-	GF_Kitchen_Fire_Alarm.sendCommand(ON)
-	GF_Living_Fire_Alarm.sendCommand(ON)
-	GF_Bathroom_Fire_Alarm.sendCommand(ON)
-	FF_Children_Bedroom_Fire_Alarm.sendCommand(ON)
+	sendCommand(start_m_ff, OFF)
+	sendCommand(ff_slave_to_hc_master, ON)
 end
 
 rule "Aggregator_m_gf_m_ff_a_hc"
@@ -87,8 +77,8 @@ when
 	Item gf_slave_to_hc_master received command ON or
 	Item ff_slave_to_hc_master received command ON 
 then
-/*	sendCommand(gf_slave_to_hc_master, OFF)
-	sendCommand(ff_slave_to_hc_master, OFF)*/
+	sendCommand(gf_slave_to_hc_master, OFF)
+	sendCommand(ff_slave_to_hc_master, OFF)
 	sendCommand(start_a_hc, ON)
 end
 
@@ -96,7 +86,8 @@ rule "Analyze_a_hc"
 when
 	Item start_a_hc received command ON
 then
-/*	if(Heating_Mode.state!='STOP' && (((T_bat < (Target_Temp_gf-Hysteresis)) && GF_Bathroom_heating.state== OFF) ||
+	sendCommand(start_a_hc, OFF)
+	if(Heating_Mode.state!='STOP' && (((T_bat < (Target_Temp_gf-Hysteresis)) && GF_Bathroom_heating.state== OFF) ||
 	((T_bat > (Target_Temp_gf+Hysteresis)) && GF_Bathroom_heating.state== ON) ||
 	((T_lv1 < (Target_Temp_gf-Hysteresis)) && GF_Living_heating1.state== OFF) ||
 	((T_lv1 > (Target_Temp_gf+Hysteresis)) && GF_Living_heating1.state== ON) ||
@@ -106,39 +97,42 @@ then
 	((T_kit > (Target_Temp_gf+Hysteresis)) && GF_Kitchen_heating.state== ON))){
 		check= true
 		adaptation_required_gf= true
-	} */
-
+	} 
+	
 	if (Heating_Mode.state!='STOP' && (((T_bed < (Target_Temp_gf-Hysteresis)) && FF_Bedroom_heating.state== OFF) ||
 	((T_bed > (Target_Temp_ff+Hysteresis)) && FF_Bedroom_heating.state== ON) ||
 	((T_cb < (Target_Temp_ff-Hysteresis)) && FF_Childrenroom_heating.state== OFF) ||
 	((T_cb > (Target_Temp_ff+Hysteresis)) && FF_Childrenroom_heating.state== ON))) {
 		check= true
 		adaptation_required_ff= true
-		FF_Children_Bedroom_Fire_Alarm.sendCommand(OFF)
 	}
 	if(check && (adaptation_required_gf || adaptation_required_ff)) {
-        sendCommand(start_p_hc, ON)
+		createTimer(now.plusSeconds(0.5)) [|
+				sendCommand(start_p_hc, ON)
+			]
     }
   	else{
-		if (gf_slave_to_hc_master) {
-			sendCommand(gf_slave_to_hc_master, OFF)
-        	sendCommand(start_m_gf, ON)
-		}
-		else if (ff_slave_to_hc_master) {
-			sendCommand(ff_slave_to_hc_master, OFF)
-     		sendCommand(start_m_ff, ON)
+
+		if (Math::random > 0.5) {
+			createTimer(now.plusSeconds(1)) [|
+				sendCommand(gf_slave_to_hc_master, OFF)
+        		sendCommand(start_m_gf, ON)
+			]
+		}else {
+			createTimer(now.plusSeconds(1)) [|
+				sendCommand(ff_slave_to_hc_master, OFF)
+				sendCommand(start_m_ff, ON)
+			]
 		}
     }
 	check = false
-	sendCommand(start_a_hc, OFF)
 end
 
 rule "Plan_p_hc"
 when
 	Item start_p_hc received command ON
 then
-/*	if (adaptation_required_gf) {
-		sendCommand(gf_slave_to_hc_master, OFF)
+	if (adaptation_required_gf) {
 		adaptation_required_gf= false
 		if (start_e_gf.state == OFF) {
 			if ((T_bat < (Target_Temp_gf-Hysteresis)) && GF_Bathroom_heating.state== OFF) {
@@ -167,13 +161,11 @@ then
 			}
 			sendCommand(start_e_gf, ON)
 		}
-	}*/
+	}
 
 	if (adaptation_required_ff) {
 		adaptation_required_ff= false
-		sendCommand(ff_slave_to_hc_master, OFF)
 		if (start_e_ff.state == OFF) {
-			FF_Bedroom_Fire_Alarm.sendCommand(OFF)
 			if ((T_bed < (Target_Temp_gf-Hysteresis)) && FF_Bedroom_heating.state!=ON) {
 				ff_bed= 1
 			}
@@ -196,7 +188,7 @@ rule "Exec_e_gf"
 when
 	Item start_e_gf received command ON
 then
-/*	if (gf_liv1==1) {
+	if (gf_liv1==1) {
 		gf_liv1= 0
 		GF_Living_heating1.sendCommand(ON)
 	}
@@ -228,18 +220,18 @@ then
 		gf_bat=0
 		GF_Bathroom_heating.sendCommand(OFF)
 	}
-//	createTimer(now.plusSeconds(1)) [|
-            sendCommand(start_m_gf, ON)*/
-			GF_Kitchen_Fire_Alarm.sendCommand(ON)  
-			sendCommand(start_e_gf, OFF)
-//      ]
+
+	createTimer(now.plusSeconds(1)) [|
+		sendCommand(start_e_gf, OFF)
+    	sendCommand(start_m_gf, ON)
+			
+      ]
 end 
 
 rule "Exec_e_ff"
 when
 	Item start_e_ff received command ON
 then
-	GF_Living_Fire_Alarm.sendCommand(ON)
 	if (ff_bed==1) {
 		ff_bed= 0 
 		FF_Bedroom_heating.sendCommand(ON)
@@ -256,8 +248,9 @@ then
 		ff_cb= 0
 		FF_Childrenroom_heating.sendCommand (OFF)
 	}
-//	createTimer(now.plusSeconds(1)) [|
+
+	createTimer(now.plusSeconds(1)) [|
             sendCommand(start_m_ff, ON)
 			sendCommand(start_e_ff, OFF)
-//      ]
+      ]
 end 
