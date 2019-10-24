@@ -1,9 +1,10 @@
 import java.util.Random
 val Random random = new Random()
 
-var boolean adaptation_required_gf
+var boolean adaptation_required_gf // varibili per la richiesta di adattamento per gf e ff
 var boolean adaptation_required_ff
-var boolean check
+var boolean check // variabile che nella componente A filtra il caso in cui ci sia un altro ciclo nella componente P e non abbia
+                  // abbia ancora disabilitato i flag di adattamento
 
 var Number T_lv1    // Variabili per la knowledge                                   
 var Number T_lv2  
@@ -26,7 +27,7 @@ rule "StartLoop_MySmartHomeHC"
 when
 	System started
 then
-	start_m_gf.sendCommand(OFF)
+	start_m_gf.sendCommand(OFF)  // Setto le componente a OFF ad eccezione dei monitor
 	start_m_ff.sendCommand(ON)
 	start_a_hc.sendCommand(OFF)
 	start_p_hc.sendCommand(OFF)
@@ -38,9 +39,9 @@ then
 	gf_kit= 0
 	ff_bed= 0
 	ff_cb= 0
-	adaptation_required_gf= false
+	adaptation_required_gf= false // inizializzo le variabili di adattamento a "false"
 	adaptation_required_ff= false
-	check= false
+	check= false                        // inizializzo la variabile di check a "false"
 	GF_Bathroom_heating.sendCommand(OFF) // All'inizio il riscaldamento è spento
 	GF_Living_heating1.sendCommand(OFF)
 	GF_Living_heating1.sendCommand(OFF)
@@ -52,13 +53,13 @@ rule "Monitor_m_gf"
 when
 	Item start_m_gf received command ON
 then
-	sendCommand(start_m_gf, OFF)
-	sendCommand(gf_slave_to_hc_master, ON)
 	T_lv1= GF_LZone1_Temperature.state as Number        // Aquisizione knowedge 
 	T_lv2= GF_LZone2_Temperature.state as Number      
 	T_bat= GF_Bathroom_Temperature.state as Number           
 	T_kit= GF_Kitchen_Temperature.state as Number                
     Target_Temp_gf= GF_Temperature_Setpoint.state as Number
+    sendCommand(start_m_gf, OFF)
+	sendCommand(gf_slave_to_hc_master, ON)
 end
 
 rule "Monitor_m_ff"
@@ -86,8 +87,10 @@ rule "Analyze_a_hc"
 when
 	Item start_a_hc received command ON
 then
-	sendCommand(start_a_hc, OFF)
-	if(Heating_Mode.state!='STOP' && (((T_bat < (Target_Temp_gf-Hysteresis)) && GF_Bathroom_heating.state== OFF) ||
+	sendCommand(start_a_hc, OFF) 
+
+    // verifico se ci sono le condizioni per un addattamento
+	if(Heating_Mode.state!='STOP' && (((T_bat < (Target_Temp_gf-Hysteresis)) && GF_Bathroom_heating.state== OFF) ||  
 	((T_bat > (Target_Temp_gf+Hysteresis)) && GF_Bathroom_heating.state== ON) ||
 	((T_lv1 < (Target_Temp_gf-Hysteresis)) && GF_Living_heating1.state== OFF) ||
 	((T_lv1 > (Target_Temp_gf+Hysteresis)) && GF_Living_heating1.state== ON) ||
@@ -95,7 +98,7 @@ then
 	((T_lv2 > (Target_Temp_gf+Hysteresis)) && GF_Living_heating2.state== ON) ||
 	((T_kit < (Target_Temp_gf-Hysteresis)) && GF_Kitchen_heating.state== OFF) ||
 	((T_kit > (Target_Temp_gf+Hysteresis)) && GF_Kitchen_heating.state== ON))){
-		check= true
+		check= true                
 		adaptation_required_gf= true
 	} 
 	
@@ -106,15 +109,14 @@ then
 		check= true
 		adaptation_required_ff= true
 	}
-	if(check && (adaptation_required_gf || adaptation_required_ff)) {
-		createTimer(now.plusSeconds(0.5)) [|
-				sendCommand(start_p_hc, ON)
+	if(check && (adaptation_required_gf || adaptation_required_ff)) { // se una delle variabili di adattamento è attiva, ed è stata
+		createTimer(now.plusSeconds(0.5)) [|                          // attivata da questa componente A (e non da un altro ciclo A
+				sendCommand(start_p_hc, ON)                           // precedente) allora avvia la componente P
 			]
     }
   	else{
-
-		if (Math::random > 0.5) {
-			createTimer(now.plusSeconds(1)) [|
+		if (Math::random > 0.5) {               // in caso non ci sia bisogno di adattamento, con probabilità 50% ritorna nel monitor 
+			createTimer(now.plusSeconds(1)) [|  // gf o nel monitor ff
 				sendCommand(gf_slave_to_hc_master, OFF)
         		sendCommand(start_m_gf, ON)
 			]
@@ -132,8 +134,8 @@ rule "Plan_p_hc"
 when
 	Item start_p_hc received command ON
 then
-	if (adaptation_required_gf) {
-		adaptation_required_gf= false
+	if (adaptation_required_gf) {       // in caso la variabile di adattamento gf sia attiva guarda in quale esatta stanza è richiesta 
+		adaptation_required_gf= false   // una modifica, andandola a salvare sulla variabile di modifica rispettiva
 		if (start_e_gf.state == OFF) {
 			if ((T_bat < (Target_Temp_gf-Hysteresis)) && GF_Bathroom_heating.state== OFF) {
 				gf_bat= 1
@@ -163,8 +165,8 @@ then
 		}
 	}
 
-	if (adaptation_required_ff) {
-		adaptation_required_ff= false
+	if (adaptation_required_ff) {       // in caso la variabile di adattamento ff sia attiva guarda in quale esatta stanza è richiesta 
+		adaptation_required_ff= false   // una modifica, andandola a salvare sulla variabile di modifica rispettiva
 		if (start_e_ff.state == OFF) {
 			if ((T_bed < (Target_Temp_gf-Hysteresis)) && FF_Bedroom_heating.state!=ON) {
 				ff_bed= 1
@@ -188,7 +190,7 @@ rule "Exec_e_gf"
 when
 	Item start_e_gf received command ON
 then
-	if (gf_liv1==1) {
+	if (gf_liv1==1) {       // si va a controllare lo stato delle variabili di modifica, andando ad attuare eventuali modifiche
 		gf_liv1= 0
 		GF_Living_heating1.sendCommand(ON)
 	}
@@ -231,7 +233,7 @@ end
 rule "Exec_e_ff"
 when
 	Item start_e_ff received command ON
-then
+then                           // si va a controllare lo stato delle variabili di modifica, andando ad attuare eventuali modifiche
 	if (ff_bed==1) {
 		ff_bed= 0 
 		FF_Bedroom_heating.sendCommand(ON)
