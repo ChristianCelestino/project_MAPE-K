@@ -49,7 +49,8 @@ then
     if (forzatura.state==0 && ((currentDate.after(startingClosingDate) && currentDate.before(stoppingClosingDate)) || 
         (currentDate.after(startingActivationDate) && currentDate.before(stoppingActivationDate)))){
         forzatura.sendCommand(3)  //invio la richiesta al managing (forzatura=3)  
-    }
+    }else
+        forzatura.state=0
     //se forzatura=1 significa che il managing ha dato il consenso nella gestione delle finestre, dunque agisco se sono nelle fasce orarie 
     if(forzatura.state==1){
         if (currentDate.after(startingClosingDate) && currentDate.before(stoppingClosingDate)) {
