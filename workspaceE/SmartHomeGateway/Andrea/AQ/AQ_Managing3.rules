@@ -53,7 +53,6 @@ then
 	ba_Pm10= (GF_Bathroom_AqPm10.state as DecimalType).doubleValue
 	ki_Pm10= (GF_Kitchen_AqPm10.state as DecimalType).doubleValue
     ex_Pm10= (SimAqi_Pm10.state as DecimalType).doubleValue
-
     sendCommand(gf_slave_to_aq_master, ON)
 end
 
@@ -84,6 +83,8 @@ then
         
         FF_Children_Bedroom_Fire_Alarm.sendCommand(OFF)
         FF_Bedroom_Fire_Alarm.sendCommand(OFF)
+
+        
         GF_Living_Fire_Alarm.sendCommand(ON)
 
         createTimer(now.plusSeconds(5)) [|
@@ -128,15 +129,16 @@ then
         
         sendCommand(start_a_aq,OFF)
         forzatura.sendCommand(2)
-            createTimer(now.plusSeconds(5)) [|
-                GF_Kitchen_Fire_Alarm.sendCommand(OFF)
-                GF_Bathroom_Fire_Alarm.sendCommand(OFF)
-                GF_Living_Fire_Alarm.sendCommand(ON)
+        createTimer(now.plusSeconds(5)) [|
+            GF_Kitchen_Fire_Alarm.sendCommand(OFF)
+            GF_Bathroom_Fire_Alarm.sendCommand(OFF)
+            GF_Living_Fire_Alarm.sendCommand(ON)
 
-               
+            createTimer(now.plusSeconds(5)) [|
+                GF_Living_Fire_Alarm.sendCommand(OFF)
                 sendCommand(start_p_aq,ON)
-                
-            ]
+            ]                
+        ]
     }
     
     //se qualche piano richiede l'adattamento chiamiamo il planning e affermiamo la necessità di prevalere sul managed attraverso forzatura=2 che bloccherà 
@@ -162,8 +164,6 @@ then
                 ]
             ]
         }
-
-
         if(gf_slave_to_aq_master.state==ON){
             createTimer(now.plusSeconds(5)) [|
                 sendCommand(gf_slave_to_aq_master,OFF) 
@@ -205,7 +205,10 @@ then
 	    else if(ki_Pm10 < (ex_Pm10-Hysteresis) && GF_Kitchen_Window.state==OPEN){
 		    kit=2
         }
-        sendCommand(start_e_gf, ON)
+        createTimer(now.plusSeconds(5)) [|
+            GF_Bathroom_Fire_Alarm.sendCommand(OFF)
+            sendCommand(start_e_gf, ON)
+        ]
     }
     //lo stesso vale per il primo piano
     if(adaptation_required_ff==true){
@@ -216,7 +219,10 @@ then
             cor=2
   
         }
-        sendCommand(start_e_ff, ON)
+        createTimer(now.plusSeconds(5)) [|
+            GF_Kitchen_Fire_Alarm.sendCommand(OFF)
+            sendCommand(start_e_ff, ON)
+        ]
     }   
 end
 
@@ -250,7 +256,10 @@ then
         GF_Kitchen_Window.postUpdate(CLOSED)
     }
     sendCommand(start_e_gf, OFF)
-    sendCommand(start_m_gf, ON)
+    createTimer(now.plusSeconds(5)) [|
+        GF_Bathroom_Fire_Alarm.sendCommand(OFF)
+        sendCommand(start_m_gf, ON)
+    ]
 end
 //lo stesso per il prinmo piano
 rule "Exec_e_ff"
@@ -268,5 +277,8 @@ then
         FF_ChildrenRoom_Window.postUpdate(CLOSED)
     }
     sendCommand(start_e_ff, OFF)
-    sendCommand(start_m_ff, ON)
+    createTimer(now.plusSeconds(5)) [|
+        GF_Kitchen_Fire_Alarm.sendCommand(OFF)
+        sendCommand(start_m_ff, ON)
+    ]
 end
