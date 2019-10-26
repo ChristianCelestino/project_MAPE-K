@@ -1,7 +1,3 @@
-//non rileva il primo piano poichè il ciclo ff muore
-
-
-
 
 //0=no fascia   3= siamo nella fascia e invia richiesta     (AQ system)
 //1=puoi cambiare     2= non puoi        (questo codice)
