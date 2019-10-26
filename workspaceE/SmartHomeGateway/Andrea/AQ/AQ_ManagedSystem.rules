@@ -1,3 +1,5 @@
+//funziona ma ho dei dubbi sul forzatura=0 e quando metterlo
+
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Calendar
@@ -44,32 +46,27 @@ then
     startingActivationDate = datos.parse(startingSystemActivationTime)
     stoppingActivationDate = datos.parse(stoppingSystemActivationTime)    
     //se la forzatura=0 (default) posso richiedere al managing di poter agire se siamo nelle fasce orarie
-    if(forzatura.state==0){
-        if ((currentDate.after(startingClosingDate) && currentDate.before(stoppingClosingDate))){
-            forzatura.sendCommand(3)  //invio la richiesta al managing (forzatura=3)
-        } 
-        else if ((currentDate.after(startingActivationDate) && currentDate.before(stoppingActivationDate))){
-            forzatura.sendCommand(3)   
-        }
+    if (forzatura.state==0 && ((currentDate.after(startingClosingDate) && currentDate.before(stoppingClosingDate)) || 
+        (currentDate.after(startingActivationDate) && currentDate.before(stoppingActivationDate)))){
+        forzatura.sendCommand(3)  //invio la richiesta al managing (forzatura=3)  
     }
     //se forzatura=1 significa che il managing ha dato il consenso nella gestione delle finestre, dunque agisco se sono nelle fasce orarie 
-    if (forzatura.state==1 && currentDate.after(startingClosingDate) && currentDate.before(stoppingClosingDate)) {
+    if(forzatura.state==1){
+        if (currentDate.after(startingClosingDate) && currentDate.before(stoppingClosingDate)) {
             GF_Living_Window.postUpdate("CLOSED")
             GF_Kitchen_Window.postUpdate("CLOSED")
             GF_Bathroom_Window.postUpdate("CLOSED")
             FF_Bedroom_Window.postUpdate("CLOSED")
             FF_ChildrenRoom_Window.postUpdate("CLOSED")
         }   
-    if (forzatura.state==1 && currentDate.after(startingActivationDate) && currentDate.before(stoppingActivationDate)) {
+        if (currentDate.after(startingActivationDate) && currentDate.before(stoppingActivationDate)) {
             GF_Living_Window.postUpdate("OPEN")
             GF_Kitchen_Window.postUpdate("OPEN")
             GF_Bathroom_Window.postUpdate("OPEN")
             FF_Bedroom_Window.postUpdate("OPEN")
             FF_ChildrenRoom_Window.postUpdate("OPEN")
+        }
     }
-    else //se non siamo nelle fasce orarie 
-        forzatura.sendCommand(0)
-
     //se gli orari sono stati invertiti per sbaglio li scambio 
     if (stoppingClosingDate.before(startingClosingDate)){
         Stopping_Hour_Windows_Closing.state = Starting_Hour_Windows_Closing.state
