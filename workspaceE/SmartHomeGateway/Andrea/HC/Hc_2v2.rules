@@ -45,13 +45,7 @@ end
 
 rule "Monitor_m_gf"
 when
-/*	Item start_m_gf received command ON or
-	Item GF_Temperature_Setpoint changed or       */                                                                     
-    Time cron "0/5 0/1 * 1/1 * ? *" //Fire the control every 5 seconds
-/*	Item GF_LZone1_Temperature changed or
-	Item GF_LZone2_Temperature changed or
-	Item GF_Bathroom_Temperature changed or
-	Item GF_Kitchen_Temperature changed */
+	Item start_m_gf received command ON
 then
 	sendCommand(start_m_gf, OFF)
 	sendCommand(gf_slave_to_hc_master, ON)
@@ -64,11 +58,7 @@ end
 
 rule "Monitor_m_ff"
 when
-/*	Item start_m_ff received command ON or  	
-	Item FF_Temperature_Setpoint changed or    */                                                                        
-    Time cron "0/5 0/1 * 1/1 * ? *" //Fire the control every 5 seconds
-/*	Item FF_Bedroom_Temperature changed or
-	Item FF_Childrenroom_Temperature changed*/
+	Item start_m_ff received command ON
 then
 	sendCommand(start_m_ff, OFF)
 	sendCommand(ff_slave_to_hc_master, ON)
@@ -82,8 +72,8 @@ when
 	Item gf_slave_to_hc_master received command ON or
 	Item ff_slave_to_hc_master received command ON 
 then
-	sendCommand(gf_slave_to_hc_master, OFF)
-	sendCommand(ff_slave_to_hc_master, OFF)
+/*	sendCommand(gf_slave_to_hc_master, OFF)
+	sendCommand(ff_slave_to_hc_master, OFF)*/
 	sendCommand(start_a_hc, ON)
 end
 
@@ -92,7 +82,7 @@ when
 	Item start_a_hc received command ON
 then
 	sendCommand(start_a_hc, OFF)
-	if(Heating_Mode.state!='STOP' && (((T_bat < (Target_Temp_gf-Hysteresis)) && GF_Bathroom_heating.state!=ON) ||
+/*	if(Heating_Mode.state!='STOP' && (((T_bat < (Target_Temp_gf-Hysteresis)) && GF_Bathroom_heating.state!=ON) ||
 	((T_bat > (Target_Temp_gf+Hysteresis)) && GF_Bathroom_heating.state!=OFF) ||
 	((T_lv1 < (Target_Temp_gf-Hysteresis)) && GF_Living_heating1.state!=ON) ||
 	((T_lv1 > (Target_Temp_gf+Hysteresis)) && GF_Living_heating1.state!=OFF) ||
@@ -102,7 +92,7 @@ then
 	((T_kit > (Target_Temp_gf+Hysteresis)) && GF_Kitchen_heating.state!=OFF))){
 
 		adaptation_required_gf= true
-	} 
+	} */
 
 	if (Heating_Mode.state!='STOP' && (((T_bed < (Target_Temp_gf-Hysteresis)) && FF_Bedroom_heating.state!=ON) ||
 	((T_bed > (Target_Temp_ff+Hysteresis)) && FF_Bedroom_heating.state!=OFF) ||
@@ -115,10 +105,16 @@ then
 	if(adaptation_required_gf || adaptation_required_ff){
         sendCommand(start_p_hc, ON)
     }
-  /*  else{
-        sendCommand(start_m_gf, ON)
-        sendCommand(start_m_ff, ON)
-    }*/
+  	else{
+		if (gf_slave_to_hc_master) {
+			sendCommand(gf_slave_to_hc_master, OFF)
+        	sendCommand(start_m_gf, ON)
+		}
+		else if (ff_slave_to_hc_master) {
+			sendCommand(ff_slave_to_hc_master, OFF)
+     		sendCommand(start_m_ff, ON)
+		}
+    }
 end
 
 rule "Plan_p_hc"
@@ -126,7 +122,8 @@ when
 	Item start_p_hc received command ON
 then
 	sendCommand(start_p_hc, OFF)
-	if (adaptation_required_gf) {
+/*	if (adaptation_required_gf) {
+		sendCommand(gf_slave_to_hc_master, OFF)
 		if ((T_bat < (Target_Temp_gf-Hysteresis)) && GF_Bathroom_heating.state!=ON) {
 			gf_bat= 1
 		}
@@ -153,9 +150,11 @@ then
 		}
 		adaptation_required_gf= false
 		sendCommand(start_e_gf, ON)
-	}
+	}*/
 
-	if (adaptation_required_ff) {
+	if (adaptation_required_ff && start_e_ff.state == OFF) {
+		adaptation_required_ff= false
+		sendCommand(ff_slave_to_hc_master, OFF)
 		if ((T_bed < (Target_Temp_gf-Hysteresis)) && FF_Bedroom_heating.state!=ON) {
 			ff_bed= 1
 		}
@@ -168,7 +167,6 @@ then
 		else if ((T_cb > (Target_Temp_ff+Hysteresis)) && FF_Childrenroom_heating.state!=OFF) {
 			ff_cb= 2
 		}
-		adaptation_required_ff= false
 		sendCommand(start_e_ff, ON)
 	}
 end
@@ -177,7 +175,7 @@ rule "Exec_e_gf"
 when
 	Item start_e_gf received command ON
 then
-	if (gf_liv1==1) {
+/*	if (gf_liv1==1) {
 		GF_Living_heating1.sendCommand(ON)
 	}
 	else if (gf_liv1==2) {
@@ -205,9 +203,10 @@ then
 	gf_liv2= 0
 	gf_kit= 0
 	gf_bat=0
-	sendCommand(start_e_gf, OFF)
-//	sendCommand(start_m_gf, ON)
-	
+//	createTimer(now.plusSeconds(1)) [|
+            sendCommand(start_m_gf, ON)*/
+			sendCommand(start_e_gf, OFF)
+//      ]
 end 
 
 rule "Exec_e_ff"
@@ -215,19 +214,23 @@ when
 	Item start_e_ff received command ON
 then
 	if (ff_bed==1) {
+		ff_bed= 0 
 		FF_Bedroom_heating.sendCommand(ON)
 	}
 	else if (ff_bed==2) {
+		ff_bed= 0 
 		FF_Bedroom_heating.sendCommand(OFF)
 	}
 	if (ff_cb==1) {
+		ff_cb= 0
 		FF_Childrenroom_heating.sendCommand (ON)
 	}
 	else if (ff_cb==2) {
+		ff_cb= 0
 		FF_Childrenroom_heating.sendCommand (OFF)
 	}
-	ff_bed= 0    // re-inizializzazione per il ciclo seguente
-	ff_cb= 0
-	sendCommand(start_e_ff, OFF)
-//	sendCommand(start_m_ff, ON)
+//	createTimer(now.plusSeconds(1)) [|
+            sendCommand(start_m_ff, ON)
+			sendCommand(start_e_ff, OFF)
+//      ]
 end 
