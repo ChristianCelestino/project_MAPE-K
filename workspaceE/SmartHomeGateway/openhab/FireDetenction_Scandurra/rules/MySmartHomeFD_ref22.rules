@@ -81,6 +81,7 @@ then
 	sendCommand(start_m_gf, ON)//loop completed
 end
 
+
 rule "Exec_e_ff_slave"
 when
 	Item start_e_ff received command ON

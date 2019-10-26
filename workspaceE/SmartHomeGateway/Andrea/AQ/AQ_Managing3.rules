@@ -87,9 +87,15 @@ then
         
         GF_Living_Fire_Alarm.sendCommand(ON)
 
-        createTimer(now.plusSeconds(5)) [|
+        createTimer(now.plusSeconds(3)) [|
             GF_Living_Fire_Alarm.sendCommand(OFF)
-            sendCommand(start_a_aq, ON)
+            if(start_a_aq.state==ON){
+                reateTimer(now.plusSeconds(2)) [|
+                    sendCommand(start_a_aq, ON)
+                ]
+            }else
+                sendCommand(start_a_aq, ON)
+
         ]
 
         
@@ -109,7 +115,7 @@ then
 		(ba_Pm10 < (ex_Pm10-Hysteresis) &&  GF_Bathroom_Window.state==OPEN) ||
 		(ki_Pm10 < (ex_Pm10-Hysteresis) && GF_Kitchen_Window.state==OPEN)) {
 		
-        createTimer(now.plusSeconds(5)) [|
+        createTimer(now.plusSeconds(3)) [|
            GF_Bathroom_Fire_Alarm.sendCommand(ON)
            adaptation_required_gf= true
         ]
@@ -118,7 +124,7 @@ then
     if ((cor_Pm10 > (ex_Pm10+Hysteresis) && (FF_ChildrenRoom_Window.state==CLOSED || FF_Bedroom_Window.state==CLOSED)) || 
         (cor_Pm10 < (ex_Pm10-Hysteresis) && (FF_ChildrenRoom_Window.state==OPEN || FF_Bedroom_Window.state==OPEN))) {
             
-        createTimer(now.plusSeconds(5)) [|
+        createTimer(now.plusSeconds(3)) [|
             GF_Kitchen_Fire_Alarm.sendCommand(ON)
             adaptation_required_ff=true
 
@@ -129,12 +135,12 @@ then
         
         sendCommand(start_a_aq,OFF)
         forzatura.sendCommand(2)
-        createTimer(now.plusSeconds(5)) [|
+        createTimer(now.plusSeconds(3)) [|
             GF_Kitchen_Fire_Alarm.sendCommand(OFF)
             GF_Bathroom_Fire_Alarm.sendCommand(OFF)
             GF_Living_Fire_Alarm.sendCommand(ON)
 
-            createTimer(now.plusSeconds(5)) [|
+            createTimer(now.plusSeconds(3)) [|
                 GF_Living_Fire_Alarm.sendCommand(OFF)
                 sendCommand(start_p_aq,ON)
             ]                
@@ -155,23 +161,23 @@ then
         if(ff_slave_to_aq_master.state==ON ){
            // GF_Kitchen_Fire_Alarm.sendCommand(ON)
 
-            createTimer(now.plusSeconds(5)) [|
+            createTimer(now.plusSeconds(3)) [|
                 sendCommand(ff_slave_to_aq_master,OFF)
                 sendCommand(start_a_aq,OFF)
 
-                createTimer(now.plusSeconds(5)) [|
+                createTimer(now.plusSeconds(3)) [|
                     sendCommand(start_m_ff, ON)
                 ]
             ]
         }
         if(gf_slave_to_aq_master.state==ON){
-            createTimer(now.plusSeconds(5)) [|
+            createTimer(now.plusSeconds(3)) [|
                 sendCommand(gf_slave_to_aq_master,OFF) 
                 sendCommand(start_a_aq,OFF)
 
                 //GF_Bathroom_Fire_Alarm.sendCommand(ON)
 
-                    createTimer(now.plusSeconds(5)) [|
+                    createTimer(now.plusSeconds(3)) [|
                         sendCommand(start_m_gf, ON)
                     ]
             ]
@@ -205,7 +211,7 @@ then
 	    else if(ki_Pm10 < (ex_Pm10-Hysteresis) && GF_Kitchen_Window.state==OPEN){
 		    kit=2
         }
-        createTimer(now.plusSeconds(5)) [|
+        createTimer(now.plusSeconds(3)) [|
             GF_Bathroom_Fire_Alarm.sendCommand(OFF)
             sendCommand(start_e_gf, ON)
         ]
@@ -219,7 +225,7 @@ then
             cor=2
   
         }
-        createTimer(now.plusSeconds(5)) [|
+        createTimer(now.plusSeconds(3)) [|
             GF_Kitchen_Fire_Alarm.sendCommand(OFF)
             sendCommand(start_e_ff, ON)
         ]
@@ -256,7 +262,7 @@ then
         GF_Kitchen_Window.postUpdate(CLOSED)
     }
     sendCommand(start_e_gf, OFF)
-    createTimer(now.plusSeconds(5)) [|
+    createTimer(now.plusSeconds(3)) [|
         GF_Bathroom_Fire_Alarm.sendCommand(OFF)
         sendCommand(start_m_gf, ON)
     ]
@@ -277,7 +283,7 @@ then
         FF_ChildrenRoom_Window.postUpdate(CLOSED)
     }
     sendCommand(start_e_ff, OFF)
-    createTimer(now.plusSeconds(5)) [|
+    createTimer(now.plusSeconds(3)) [|
         GF_Kitchen_Fire_Alarm.sendCommand(OFF)
         sendCommand(start_m_ff, ON)
     ]

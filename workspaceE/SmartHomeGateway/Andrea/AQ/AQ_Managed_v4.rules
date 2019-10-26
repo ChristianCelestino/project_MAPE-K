@@ -31,7 +31,6 @@ when
     Item Stopping_Hour_System_Activation changed or
     Item Stopping_Minute_System_Activation changed or
     Time cron "0/30 0/1 * 1/1 * ? *" //Fire every 30 seconds (change to "0 0/1 * * * ?" to fire every minute) 
-
 then
     //raccolgo la data corrente e gli orari impostati dall'utente
     datos = new SimpleDateFormat ("yyyy-MM-dd HH:mm:ss")
@@ -50,8 +49,18 @@ then
         (currentDate.after(startingActivationDate) && currentDate.before(stoppingActivationDate)))){
         forzatura.sendCommand(3)  //invio la richiesta al managing (forzatura=3)  
     }
+    if((!currentDate.after(startingClosingDate) && !currentDate.before(stoppingClosingDate)) || 
+        (!currentDate.after(startingActivationDate) && !currentDate.before(stoppingActivationDate))){
+            forzatura.state=0
+        }else{
+        forzatura.state=0
+        GF_Living_Fire_Alarm.sendCommand(ON)
+    }
     //se forzatura=1 significa che il managing ha dato il consenso nella gestione delle finestre, dunque agisco se sono nelle fasce orarie 
+    GF_Living_Fire_Alarm.sendCommand(ON)
+
     if(forzatura.state==1){
+        GF_Living_Fire_Alarm.sendCommand(ON)
         if (currentDate.after(startingClosingDate) && currentDate.before(stoppingClosingDate)) {
             GF_Living_Window.postUpdate("CLOSED")
             GF_Kitchen_Window.postUpdate("CLOSED")
