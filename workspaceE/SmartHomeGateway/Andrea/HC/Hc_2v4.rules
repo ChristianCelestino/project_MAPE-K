@@ -46,8 +46,6 @@ then
 	GF_Living_heating1.sendCommand(OFF)
 	GF_Living_heating1.sendCommand(OFF)
 	GF_Kitchen_heating.sendCommand(OFF)
-	FF_Bedroom_heating.sendCommand(OFF)
-	FF_Childrenroom_heating.sendCommand(OFF)
 	if (Managing_System_Active.state == ON) Managing_System_Active.postUpdate(OFF)  
 end
 
