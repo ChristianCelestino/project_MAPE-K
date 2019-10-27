@@ -1,7 +1,10 @@
 import java.util.Random
 val Random random = new Random()
 
-
+var boolean flag_precedenza_gf
+var boolean flag_precedenza_ff
+var boolean gf_call
+var boolean ff_call
 var boolean adaptation_required_gf // varibili per la richiesta di adattamento per gf e ff
 var boolean adaptation_required_ff
 var boolean check // variabile che nella componente A filtra il caso in cui ci sia un altro ciclo nella componente P e non abbia
@@ -28,7 +31,7 @@ rule "StartLoop_MySmartHomeHC"
 when
 	System started
 then
-	start_m_gf.sendCommand(OFF)  // Setto le componente a OFF ad eccezione dei monitor
+	start_m_gf.sendCommand(ON)  // Setto le componente a OFF ad eccezione dei monitor
 	start_m_ff.sendCommand(ON)
 	start_a_hc.sendCommand(OFF)
 	start_p_hc.sendCommand(OFF)
@@ -40,6 +43,10 @@ then
 	gf_kit= 0
 	ff_bed= 0
 	ff_cb= 0
+	gf_call= false
+	ff_call= false
+	flag_precedenza_ff= false
+	flag_precedenza_gf= false
 	adaptation_required_gf= false // inizializzo le variabili di adattamento a "false"
 	adaptation_required_ff= false
 	check= false                        // inizializzo la variabile di check a "false"
@@ -61,6 +68,9 @@ then
 	T_bat= GF_Bathroom_Temperature.state as Number           
 	T_kit= GF_Kitchen_Temperature.state as Number                
     Target_Temp_gf= GF_Temperature_Setpoint.state as Number
+	if (!flag_precedenza_ff)
+		flag_precedenza_gf= true
+	gf_call= true 
     sendCommand(start_m_gf, OFF)
 	sendCommand(gf_slave_to_hc_master, ON)
 end
@@ -72,6 +82,10 @@ then
 	T_bed= FF_Bedroom_Temperature.state as Number   // Aquisizione knowedge 
 	T_cb= FF_Childrenroom_Temperature.state as Number
 	Target_Temp_ff= FF_Temperature_Setpoint.state as Number
+	if (!flag_precedenza_gf) {
+		flag_precedenza_ff= true
+	}
+	ff_call= true
 	sendCommand(start_m_ff, OFF)
 	sendCommand(ff_slave_to_hc_master, ON)
 end
@@ -81,14 +95,25 @@ when
 	Item gf_slave_to_hc_master received command ON or
 	Item ff_slave_to_hc_master received command ON 
 then
-	sendCommand(gf_slave_to_hc_master, OFF)
-	if (start_a_hc.state== ON) {
-		createTimer(now.plusSeconds(3)) [|                          // attivata da questa componente A (e non da un altro ciclo A
-				sendCommand(start_a_hc, ON)                         // precedente) allora avvia la componente P
-			]
-	} else
-		sendCommand(start_a_hc, ON)  
+	if (flag_precedenza_ff && flag_precedenza_gf) {
+		GF_Kitchen_Fire_Alarm.sendCommand(ON)
+	}
+
+	if (gf_slave_to_hc_master.state== ON) {
+		sendCommand(gf_slave_to_hc_master, OFF)
+	}
+
+	else if (ff_slave_to_hc_master.state== ON){
+		sendCommand(ff_slave_to_hc_master, OFF)
+	}
 	
+	if (start_a_hc.state== ON) {
+		createTimer(now.plusSeconds(4)) [|                         
+				sendCommand(start_a_hc, ON)                         
+			]
+	} else {
+		sendCommand(start_a_hc, ON)  
+	}
 end
 
 rule "Analyze_a_hc"
@@ -103,7 +128,7 @@ then
 	((T_lv2 < (Target_Temp_gf-Hysteresis)) && GF_Living_heating2.state== OFF) ||
 	((T_lv2 > (Target_Temp_gf+Hysteresis)) && GF_Living_heating2.state== ON) ||
 	((T_kit < (Target_Temp_gf-Hysteresis)) && GF_Kitchen_heating.state== OFF) ||
-	((T_kit > (Target_Temp_gf+Hysteresis)) && GF_Kitchen_heating.state== ON))){
+	((T_kit > (Target_Temp_gf+Hysteresis)) && GF_Kitchen_heating.state== ON))) {
 		check= true                
 		adaptation_required_gf= true
 	} 
@@ -116,19 +141,44 @@ then
 		adaptation_required_ff= true
 	}
 	if(check && (adaptation_required_gf || adaptation_required_ff)) { // se una delle variabili di adattamento è attiva, ed è stata
-		createTimer(now.plusSeconds(0.5)) [|                          // attivata da questa componente A (e non da un altro ciclo A
-				sendCommand(start_p_hc, ON)                           // precedente) allora avvia la componente P
+		if (gf_call && !ff_call) {
+			gf_call= false
+		  }	
+		else if (ff_call && !gf_call) {
+			ff_call= false
+		}
+		else if (gf_call && ff_call) {
+			if (flag_precedenza_gf) {
+				flag_precedenza_gf= false
+				gf_call= false
+			}
+			else if (flag_precedenza_ff){
+				flag_precedenza_ff= false
+				ff_call= false
+			}
+		}	
+		else if(!gf_call && !ff_call) 
+			GF_Living_Fire_Alarm.sendCommand(ON)
+
+		createTimer(now.plusSeconds(0.5)) [|                         
+				sendCommand(start_p_hc, ON)                           
 			]
     }
   	else{
-		  if (ff_slave_to_hc_master.state== ON) {
-			sendCommand(ff_slave_to_hc_master, OFF)
-			sendCommand(start_p_hc, ON)
-		  }
-		  else if (gf_slave_to_hc_master.state== ON) {
-			sendCommand(gf_slave_to_hc_master, OFF)
-			sendCommand(start_p_hc, ON)
-		  }
+	    if (gf_call) {
+			gf_call= false
+			flag_precedenza_gf= false
+			createTimer(now.plusSeconds(1)) [|  
+    		sendCommand(start_m_gf, ON)
+		]
+	  }
+		else if (ff_call) {
+			ff_call= false
+			flag_precedenza_ff= false
+			createTimer(now.plusSeconds(1)) [| 
+    		sendCommand(start_m_ff, ON)
+		   ]
+		}
     }
 	check = false
 	sendCommand(start_a_hc, OFF) 
