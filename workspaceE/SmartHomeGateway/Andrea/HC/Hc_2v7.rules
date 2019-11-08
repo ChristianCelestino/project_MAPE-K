@@ -1,6 +1,7 @@
 import java.util.Random
 val Random random = new Random()
 
+var boolean flag_wait
 var boolean flag_precedenza_gf
 var boolean flag_precedenza_ff
 var boolean gf_call
@@ -45,6 +46,7 @@ then
 	ff_cb= 0
 	gf_call= false
 	ff_call= false
+	flag_wait= false
 	flag_precedenza_ff= false
 	flag_precedenza_gf= false
 	adaptation_required_gf= false // inizializzo le variabili di adattamento a "false"
@@ -57,7 +59,11 @@ then
 	FF_Childrenroom_heating.sendCommand(OFF)
 	FF_Bedroom_heating.sendCommand(OFF)
 	if (Managing_System_Active.state == ON) Managing_System_Active.postUpdate(OFF)  
-end
+	GF_Bathroom_Fire_Alarm.sendCommand(OFF)
+	GF_Living_Fire_Alarm.sendCommand(OFF)
+	GF_Kitchen_Fire_Alarm.sendCommand(OFF)
+	FF_Bedroom_Fire_Alarm.sendCommand(OFF)
+end 
 
 rule "Monitor_m_gf"
 when
@@ -74,7 +80,7 @@ then
 
 		else 
 			flag_precedenza_gf= true
-	}	
+	}
 	gf_call= true
     sendCommand(start_m_gf, OFF)
 	sendCommand(gf_slave_to_hc_master, ON)
@@ -93,7 +99,7 @@ then
 
 		else 
 			flag_precedenza_ff= true
-	}
+	} 
 	ff_call= true
 	sendCommand(start_m_ff, OFF)
 	sendCommand(ff_slave_to_hc_master, ON)
@@ -112,13 +118,11 @@ then
 		sendCommand(ff_slave_to_hc_master, OFF)
 	}
 	
-	if (start_a_hc.state== ON) {
-		createTimer(now.plusSeconds(3)) [|                         
-				sendCommand(start_a_hc, ON)                         
-			]
-	} else {
-		sendCommand(start_a_hc, ON)  
-	}
+	do {
+	
+	} while (start_a_hc.state== ON)
+
+	sendCommand(start_a_hc, ON) 
 end
 
 rule "Analyze_a_hc"
@@ -129,9 +133,9 @@ then
 	if(Heating_Mode.state!='STOP' && (((T_bat < (Target_Temp_gf-Hysteresis)) && GF_Bathroom_heating.state== OFF) ||  
 	((T_bat > (Target_Temp_gf+Hysteresis)) && GF_Bathroom_heating.state== ON) ||
 	((T_lv1 < (Target_Temp_gf-Hysteresis)) && GF_Living_heating1.state== OFF) ||
-	((T_lv1 > (Target_Temp_gf+Hysteresis)) && GF_Living_heating1.state== ON)  ||
+	((T_lv1 > (Target_Temp_gf+Hysteresis)) && GF_Living_heating1.state== ON) ||
 	((T_lv2 < (Target_Temp_gf-Hysteresis)) && GF_Living_heating2.state== OFF) ||
-	((T_lv2 > (Target_Temp_gf+Hysteresis)) && GF_Living_heating2.state== ON)  ||
+	((T_lv2 > (Target_Temp_gf+Hysteresis)) && GF_Living_heating2.state== ON) ||
 	((T_kit < (Target_Temp_gf-Hysteresis)) && GF_Kitchen_heating.state== OFF) ||
 	((T_kit > (Target_Temp_gf+Hysteresis)) && GF_Kitchen_heating.state== ON))) {
 		check= true                
@@ -153,7 +157,10 @@ then
 		else if (ff_call && ((!gf_call) || (flag_precedenza_ff))) {
 			ff_call= false
 			flag_precedenza_ff= false
-		}
+		}	
+		else {
+			GF_Bathroom_Fire_Alarm.sendCommand(ON)
+		}	
 
 		createTimer(now.plusSeconds(0.5)) [|                         
 				sendCommand(start_p_hc, ON)                           
@@ -174,10 +181,12 @@ then
     			sendCommand(start_m_ff, ON)
 		  	]
 		}
+		else 
+			GF_Kitchen_Fire_Alarm.sendCommand(ON)
     }
 	check = false
-	sendCommand(start_a_hc, OFF)
-end
+	sendCommand(start_a_hc, OFF) 
+end 
 
 rule "Plan_p_hc"
 when
@@ -211,7 +220,8 @@ then
 				gf_kit= 2
 			}
 			sendCommand(start_e_gf, ON)
-		}
+		} else
+			FF_Children_Bedroom_Fire_Alarm.sendCommand(ON) 
 	}
 
 	if (adaptation_required_ff) {       // in caso la variabile di adattamento ff sia attiva guarda in quale esatta stanza è richiesta 
@@ -230,7 +240,8 @@ then
 				ff_cb= 2
 			}
 			sendCommand(start_e_ff, ON)
-		} 
+		} else 
+			FF_Bedroom_Fire_Alarm.sendCommand(ON) 
 	}
 	sendCommand(start_p_hc, OFF)
 end
@@ -275,6 +286,7 @@ then
 	createTimer(now.plusSeconds(1)) [|
 		sendCommand(start_e_gf, OFF)
     	sendCommand(start_m_gf, ON)
+			
       ]
 end 
 
@@ -300,7 +312,7 @@ then                           // si va a controllare lo stato delle variabili d
 	}
 
 	createTimer(now.plusSeconds(1)) [|
-            sendCommand(start_m_ff, ON)
-			sendCommand(start_e_ff, OFF)
+		sendCommand(start_e_ff, OFF)
+        sendCommand(start_m_ff, ON)
       ]
 end 
