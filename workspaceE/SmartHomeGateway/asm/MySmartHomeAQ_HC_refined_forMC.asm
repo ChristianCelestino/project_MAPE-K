@@ -299,21 +299,21 @@ function airLevel ($v in AirDomain) =
 	rule r_CleanUp_MainAQA =
 		sgnMainAQMtoA(self) := false //Added in refinement
 
-rule r_checkAirAdaptationRequired =
-    //First, check if adaptation is required for external bad air
+rule r_check_unicitaAirAdaptationRequired =
+    //First, check_unicita if adaptation is required for external bad air
 	  if (veryBadAir(outsideAqiSaved(self)) and eq(windowsStatusSaved(self),OPEN)) then
 			  	par
 					desiredWindowsStatus(self) := CLOSED
 					sgnMainAQAtoE(self) := true //start E
 				endpar
-	//Second, check if adaptation is required for refreshing air inside	
+	//Second, check_unicita if adaptation is required for refreshing air inside	
 	  else if (veryBadAirInside(aQInsideCO2Saved(self)) and not(veryBadAir(outsideAqiSaved(self)))) then
 			    par
 			       nolongerBadAirInside := false
 			       desiredWindowsStatus(self) := OPEN
      			   sgnMainAQAtoE(self) := true //start E
 			    endpar 
-    //Third, check if adaptation is required for closing the windows after the air inside was refreshed	
+    //Third, check_unicita if adaptation is required for closing the windows after the air inside was refreshed	
 	  else if (not veryBadAirInside(aQInsideCO2Saved(self)) and windowsStatusSaved(self) = OPEN and not nolongerBadAirInside) then
 			    par //restore normal status
 			       nolongerBadAirInside := true
@@ -327,7 +327,7 @@ rule r_checkAirAdaptationRequired =
 	rule r_MainAQA =
 		if startMainAQA(self) then
 			par
-				r_checkAirAdaptationRequired[]
+				r_check_unicitaAirAdaptationRequired[]
 				r_CleanUp_MainAQA[]
 			endpar
 		endif

@@ -382,7 +382,7 @@
       </children>
       <children xsi:type="menu:ToolBar" xmi:id="_UUDhNd7JEem-N-8rIhAMuw" elementId="org.eclipse.ui.workbench.navigate">
         <tags>Draggable</tags>
-        <children xsi:type="menu:HandledToolItem" xmi:id="_UUQVgN7JEem-N-8rIhAMuw" elementId="org.eclipse.ui.window.pinEditor" visible="false" iconURI="platform:/plugin/org.eclipse.ui/icons/full/etool16/pin_editor.png" tooltip="Pin Editor" type="Check" command="_T6i1Jt7JEem-N-8rIhAMuw"/>
+        <children xsi:type="menu:HandledToolItem" xmi:id="_UUQVgN7JEem-N-8rIhAMuw" elementId="org.eclipse.ui.window.pinEditor" visible="false" iconURI="platform:/plugin/org.eclipse.ui/icons/full/etool16/pin_editor.png" tooltip="Pin Editor" type="check_unicita" command="_T6i1Jt7JEem-N-8rIhAMuw"/>
       </children>
       <children xsi:type="menu:ToolBar" xmi:id="_UUEIQN7JEem-N-8rIhAMuw" elementId="group.editor" toBeRendered="false">
         <tags>toolbarSeparator</tags>
@@ -1490,7 +1490,7 @@
   <commands xmi:id="_T6cue97JEem-N-8rIhAMuw" elementId="org.eclipse.debug.ui.commands.ToggleLineBreakpoint" commandName="Toggle Line Breakpoint" description="Creates or removes a line breakpoint" category="_T6a5TN7JEem-N-8rIhAMuw"/>
   <commands xmi:id="_T6cufN7JEem-N-8rIhAMuw" elementId="org.eclipse.mylyn.tasks.ui.command.searchForTask" commandName="Search Repository for Task" category="_T6a5QN7JEem-N-8rIhAMuw"/>
   <commands xmi:id="_T6cufd7JEem-N-8rIhAMuw" elementId="org.eclipse.jdt.ui.correction.addImport" commandName="Quick Fix - Add import" description="Invokes quick assist and selects 'Add import'" category="_T6bgR97JEem-N-8rIhAMuw"/>
-  <commands xmi:id="_T6cuft7JEem-N-8rIhAMuw" elementId="org.eclipse.egit.ui.internal.reflog.CheckoutCommand" commandName="Check Out" category="_T6bgTt7JEem-N-8rIhAMuw"/>
+  <commands xmi:id="_T6cuft7JEem-N-8rIhAMuw" elementId="org.eclipse.egit.ui.internal.reflog.check_unicitaoutCommand" commandName="check_unicita Out" category="_T6bgTt7JEem-N-8rIhAMuw"/>
   <commands xmi:id="_T6dVcN7JEem-N-8rIhAMuw" elementId="org.eclipse.ui.edit.move" commandName="Move..." description="Move the selected item" category="_T6a5RN7JEem-N-8rIhAMuw"/>
   <commands xmi:id="_T6dVcd7JEem-N-8rIhAMuw" elementId="org.eclipse.jdt.ui.refactor.migrate.jar" commandName="Migrate JAR File" description="Migrate a JAR File to a new version" category="_T6a5R97JEem-N-8rIhAMuw"/>
   <commands xmi:id="_T6dVct7JEem-N-8rIhAMuw" elementId="org.eclipse.mylyn.tasks.ui.command.maximizePart" commandName="Maximize Part" description="Maximize Part" category="_T6a5Nd7JEem-N-8rIhAMuw"/>
@@ -2087,7 +2087,7 @@
   </commands>
   <commands xmi:id="_T6i1AN7JEem-N-8rIhAMuw" elementId="org.eclipse.mylyn.tasks.ui.viewSource.command" commandName="View Unformatted Text" category="_T6a5P97JEem-N-8rIhAMuw"/>
   <commands xmi:id="_T6i1Ad7JEem-N-8rIhAMuw" elementId="org.eclipse.ui.edit.text.moveLineDown" commandName="Move Lines Down" description="Moves the selected lines down" category="_T6a5Ot7JEem-N-8rIhAMuw"/>
-  <commands xmi:id="_T6i1At7JEem-N-8rIhAMuw" elementId="org.eclipse.equinox.p2.ui.sdk.update" commandName="Check for Updates" category="_T6bgTt7JEem-N-8rIhAMuw"/>
+  <commands xmi:id="_T6i1At7JEem-N-8rIhAMuw" elementId="org.eclipse.equinox.p2.ui.sdk.update" commandName="check_unicita for Updates" category="_T6bgTt7JEem-N-8rIhAMuw"/>
   <commands xmi:id="_T6i1A97JEem-N-8rIhAMuw" elementId="org.eclipse.ui.edit.text.goto.textEnd" commandName="Text End" description="Go to the end of the text" category="_T6a5Ot7JEem-N-8rIhAMuw"/>
   <commands xmi:id="_T6i1BN7JEem-N-8rIhAMuw" elementId="org.eclipse.pde.ui.searchTargetRepositories" commandName="Add Artifact to Target Platform" description="Add an artifact to your target platform" category="_T6bgTt7JEem-N-8rIhAMuw">
     <parameters xmi:id="_T6i1Bd7JEem-N-8rIhAMuw" elementId="org.eclipse.pde.ui.searchTargetRepositories.term" name="The initial search pattern for the artifact search dialog"/>
@@ -2117,7 +2117,7 @@
   <commands xmi:id="_T6i1HN7JEem-N-8rIhAMuw" elementId="org.eclipse.ui.edit.text.folding.restore" commandName="Reset Structure" description="Resets the folding structure" category="_T6a5Ot7JEem-N-8rIhAMuw"/>
   <commands xmi:id="_T6i1Hd7JEem-N-8rIhAMuw" elementId="org.eclipse.help.ui.indexcommand" commandName="Index" description="Show Keyword Index" category="_T6a5SN7JEem-N-8rIhAMuw"/>
   <commands xmi:id="_T6i1Ht7JEem-N-8rIhAMuw" elementId="org.eclipse.jdt.ui.edit.text.java.clean.up" commandName="Clean Up" description="Solve problems and improve code style on selected resources" category="_T6bgR97JEem-N-8rIhAMuw"/>
-  <commands xmi:id="_T6i1H97JEem-N-8rIhAMuw" elementId="org.eclipse.pde.api.tools.ui.setup.projects" commandName="API &amp;Tools Setup..." description="Configure projects for API usage and compatibility checks" category="_T6bgTt7JEem-N-8rIhAMuw"/>
+  <commands xmi:id="_T6i1H97JEem-N-8rIhAMuw" elementId="org.eclipse.pde.api.tools.ui.setup.projects" commandName="API &amp;Tools Setup..." description="Configure projects for API usage and compatibility check_unicitas" category="_T6bgTt7JEem-N-8rIhAMuw"/>
   <commands xmi:id="_T6i1IN7JEem-N-8rIhAMuw" elementId="org.eclipse.jdt.debug.ui.localJavaShortcut.debug" commandName="Debug Java Application" description="Debug Java Application" category="_T6a5TN7JEem-N-8rIhAMuw"/>
   <commands xmi:id="_T6i1Id7JEem-N-8rIhAMuw" elementId="org.eclipse.ui.navigate.forward" commandName="Forward" description="Navigate forward" category="_T6a5QN7JEem-N-8rIhAMuw"/>
   <commands xmi:id="_T6i1It7JEem-N-8rIhAMuw" elementId="org.eclipse.buildship.ui.commands.openbuildscript" commandName="Open Gradle Build Script" description="Opens the Gradle build script for the selected Gradle project" category="_T6a5QN7JEem-N-8rIhAMuw"/>
@@ -2219,7 +2219,7 @@
   <commands xmi:id="_T6kDN97JEem-N-8rIhAMuw" elementId="org.eclipse.jdt.ui.edit.text.java.infer.type.arguments" commandName="Infer Generic Type Arguments" description="Infer type arguments for references to generic classes and remove unnecessary casts" category="_T6a5R97JEem-N-8rIhAMuw"/>
   <commands xmi:id="_T6kDON7JEem-N-8rIhAMuw" elementId="org.eclipse.mylyn.builds.ui.command.ShowTestResults.url" commandName="Show Test Results" category="_T6bgTt7JEem-N-8rIhAMuw"/>
   <commands xmi:id="_T6kDOd7JEem-N-8rIhAMuw" elementId="org.eclipse.ui.edit.text.goto.lineDown" commandName="Line Down" description="Go down one line of text" category="_T6a5Ot7JEem-N-8rIhAMuw"/>
-  <commands xmi:id="_T6kDOt7JEem-N-8rIhAMuw" elementId="org.eclipse.egit.ui.commit.Checkout" commandName="Check Out" category="_T6bgTt7JEem-N-8rIhAMuw"/>
+  <commands xmi:id="_T6kDOt7JEem-N-8rIhAMuw" elementId="org.eclipse.egit.ui.commit.check_unicitaout" commandName="check_unicita Out" category="_T6bgTt7JEem-N-8rIhAMuw"/>
   <commands xmi:id="_T6kDO97JEem-N-8rIhAMuw" elementId="org.eclipse.m2e.actions.LifeCycleClean.run" commandName="Run Maven Clean" description="Run Maven Clean" category="_T6a5TN7JEem-N-8rIhAMuw"/>
   <commands xmi:id="_T6kDPN7JEem-N-8rIhAMuw" elementId="org.eclipse.ui.edit.text.gotoLastEditPosition" commandName="Last Edit Location" description="Last edit location" category="_T6a5QN7JEem-N-8rIhAMuw"/>
   <commands xmi:id="_T6kDPd7JEem-N-8rIhAMuw" elementId="org.eclipse.ui.edit.text.open.hyperlink" commandName="Open Hyperlink" description="Opens the hyperlink at the caret location or opens a chooser if more than one hyperlink is available" category="_T6a5Ot7JEem-N-8rIhAMuw"/>
@@ -2345,7 +2345,7 @@
   <commands xmi:id="_T6lRQ97JEem-N-8rIhAMuw" elementId="org.eclipse.ui.help.aboutAction" commandName="About" description="Open the about dialog" category="_T6a5SN7JEem-N-8rIhAMuw"/>
   <commands xmi:id="_T6lRRN7JEem-N-8rIhAMuw" elementId="org.eclipse.jdt.ui.edit.text.java.annotate.classFile" commandName="Annotate Class File" description="Externally add Annotations to a Class File." category="_T6bgR97JEem-N-8rIhAMuw"/>
   <commands xmi:id="_T6lRRd7JEem-N-8rIhAMuw" elementId="org.eclipse.egit.ui.team.stash.create" commandName="Stash Changes..." category="_T6bgQt7JEem-N-8rIhAMuw"/>
-  <commands xmi:id="_T6lRRt7JEem-N-8rIhAMuw" elementId="org.eclipse.egit.ui.history.CheckoutCommand" commandName="Check Out" category="_T6bgTt7JEem-N-8rIhAMuw"/>
+  <commands xmi:id="_T6lRRt7JEem-N-8rIhAMuw" elementId="org.eclipse.egit.ui.history.check_unicitaoutCommand" commandName="check_unicita Out" category="_T6bgTt7JEem-N-8rIhAMuw"/>
   <commands xmi:id="_T6lRR97JEem-N-8rIhAMuw" elementId="org.eclipse.mylyn.tasks.ui.command.activateSelectedTask" commandName="Activate Selected Task" category="_T6a5QN7JEem-N-8rIhAMuw"/>
   <commands xmi:id="_T6lRSN7JEem-N-8rIhAMuw" elementId="org.eclipse.jdt.ui.edit.text.java.search.references.in.workspace" commandName="References in Workspace" description="Search for references to the selected element in the workspace" category="_T6a5S97JEem-N-8rIhAMuw"/>
   <commands xmi:id="_T6lRSd7JEem-N-8rIhAMuw" elementId="org.eclipse.wst.sse.ui.format.document" commandName="Format" description="Format selection" category="_T6a5M97JEem-N-8rIhAMuw"/>
@@ -2367,7 +2367,7 @@
   <commands xmi:id="_T6lRV97JEem-N-8rIhAMuw" elementId="org.eclipse.equinox.p2.ui.sdk.install" commandName="Install New Software..." category="_T6bgTt7JEem-N-8rIhAMuw"/>
   <commands xmi:id="_T6lRWN7JEem-N-8rIhAMuw" elementId="org.eclipse.mylyn.context.ui.commands.interest.decrement" commandName="Make Less Interesting" description="Make Less Interesting" category="_T6a5Pt7JEem-N-8rIhAMuw"/>
   <commands xmi:id="_T6lRWd7JEem-N-8rIhAMuw" elementId="org.eclipse.ui.externaltools.ExternalToolMenuDelegateToolbar" commandName="Run Last Launched External Tool" description="Runs the last launched external Tool" category="_T6a5TN7JEem-N-8rIhAMuw"/>
-  <commands xmi:id="_T6lRWt7JEem-N-8rIhAMuw" elementId="org.eclipse.egit.ui.CheckoutCommand" commandName="Check Out" category="_T6bgQt7JEem-N-8rIhAMuw"/>
+  <commands xmi:id="_T6lRWt7JEem-N-8rIhAMuw" elementId="org.eclipse.egit.ui.check_unicitaoutCommand" commandName="check_unicita Out" category="_T6bgQt7JEem-N-8rIhAMuw"/>
   <commands xmi:id="_T6lRW97JEem-N-8rIhAMuw" elementId="org.eclipse.jdt.ui.edit.text.java.search.occurrences.in.file" commandName="Search All Occurrences in File" description="Search for all occurrences of the selected element in its declaring file" category="_T6a5S97JEem-N-8rIhAMuw"/>
   <commands xmi:id="_T6lRXN7JEem-N-8rIhAMuw" elementId="org.eclipse.ui.edit.text.moveLineUp" commandName="Move Lines Up" description="Moves the selected lines up" category="_T6a5Ot7JEem-N-8rIhAMuw"/>
   <commands xmi:id="_T6lRXd7JEem-N-8rIhAMuw" elementId="org.eclipse.equinox.p2.ui.discovery.commands.ShowBundleCatalog" commandName="Show Bundle Catalog" category="_T6bgTt7JEem-N-8rIhAMuw">

@@ -14,8 +14,8 @@ var Number liv
 var Number bat
 var Number cor
 var Number kit
-var Number check_gf
-var Number check_ff
+var Number check_unicita_gf
+var Number check_unicita_ff
 var Number c_gf
 var Number c_ff
 val Number Hysteresis = 0.04 //era 0,04
@@ -37,8 +37,8 @@ then
     bat=0
     liv=0
     kit=0
-    check_ff=0
-    check_gf=0
+    check_unicita_ff=0
+    check_unicita_gf=0
     forzatura.sendCommand(0)
     if (Managing_System_Active.state == ON) Managing_System_Active.postUpdate(OFF)
 end
@@ -104,7 +104,7 @@ then
             (ki_Pm10 < (ex_Pm10-Hysteresis) && GF_Kitchen_Window.state==OPEN)) {
             createTimer(now.plusSeconds(1)) [|
                 //GF_Bathroom_Fire_Alarm.sendCommand(ON)
-                check_gf=1
+                check_unicita_gf=1
                 adaptation_required_gf= true
             ]
 	    }
@@ -116,7 +116,7 @@ then
             (cor_Pm10 < (ex_Pm10-Hysteresis) && (FF_ChildrenRoom_Window.state==OPEN || FF_Bedroom_Window.state==OPEN))) {    
             createTimer(now.plusSeconds(1)) [|
                 //GF_Kitchen_Fire_Alarm.sendCommand(ON)
-                check_ff=1
+                check_unicita_ff=1
                 adaptation_required_ff=true
             ]
         }
@@ -165,8 +165,8 @@ when
 then
     sendCommand(start_p_aq, OFF)
     //se è richiesto adattamento al piano terra pianifico cosa fare attraverso i flag per ogni piano (1=apertura richiesta:0=chiusura richiesta)
-    if(check_gf==1 &&  adaptation_required_gf==true){
-        check_gf=0
+    if(check_unicita_gf==1 &&  adaptation_required_gf==true){
+        check_unicita_gf=0
         adaptation_required_gf==false
         if(liv_Pm10 > (ex_Pm10+Hysteresis) && GF_Living_Window.state==CLOSED){
 		    liv=1 	//apri living
@@ -193,8 +193,8 @@ then
         ]
     }
     //lo stesso vale per il primo piano
-    if(check_gf==0 && check_ff==1 && adaptation_required_ff==true){
-        check_ff=0
+    if(check_unicita_gf==0 && check_unicita_ff==1 && adaptation_required_ff==true){
+        check_unicita_ff=0
         adaptation_required_ff=false
         if(cor_Pm10 > (ex_Pm10+Hysteresis) && (FF_ChildrenRoom_Window.state==CLOSED || FF_Bedroom_Window.state==CLOSED)){
             cor=1 

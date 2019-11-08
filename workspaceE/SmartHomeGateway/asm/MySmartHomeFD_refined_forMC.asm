@@ -66,10 +66,10 @@ definitions:
 
 	//Added in refinement
 	function detectFire($a in SlaveFDMgA) =	
-	 if gsmokeSaved($a) = ON then ON //first, check if the smoke sensor is active
-	 else //otherwise, check if the max temperature overtakes the threshold 45C�
+	 if gsmokeSaved($a) = ON then ON //first, check_unicita if the smoke sensor is active
+	 else //otherwise, check_unicita if the max temperature overtakes the threshold 45C�
 		if isDef( maxTemperatureSaved($a) ) then
-			//for model checking, using 4 instead of 45
+			//for model check_unicitaing, using 4 instead of 45
 			if (maxTemperatureSaved($a) >= 4) then ON else OFF endif 
 		else OFF //No further knowledge to detect a fire
 		endif

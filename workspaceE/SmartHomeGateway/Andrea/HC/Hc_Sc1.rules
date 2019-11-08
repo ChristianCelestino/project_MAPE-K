@@ -1,6 +1,11 @@
 import java.util.Random
 val Random random = new Random()
 
+var boolean flag_wait
+var boolean flag_precedenza_gf
+var boolean flag_precedenza_ff
+var boolean gf_call
+var boolean ff_call
 var boolean adaptation_required_gf // varibili per la richiesta di adattamento per gf e ff
 var boolean adaptation_required_ff
 var boolean check_unicita // variabile che nella componente A filtra il caso in cui ci sia un altro ciclo nella componente P e non abbia
@@ -27,7 +32,7 @@ rule "StartLoop_MySmartHomeHC"
 when
 	System started
 then
-	start_m_gf.sendCommand(OFF)  // Setto le componente a OFF ad eccezione dei monitor
+	start_m_gf.sendCommand(ON)  // Setto le componente a OFF ad eccezione dei monitor
 	start_m_ff.sendCommand(ON)
 	start_a_hc.sendCommand(OFF)
 	start_p_hc.sendCommand(OFF)
@@ -39,17 +44,26 @@ then
 	gf_kit= 0
 	ff_bed= 0
 	ff_cb= 0
+	gf_call= false
+	ff_call= false
+	flag_wait= false
+	flag_precedenza_ff= false
+	flag_precedenza_gf= false
 	adaptation_required_gf= false // inizializzo le variabili di adattamento a "false"
 	adaptation_required_ff= false
 	check_unicita= false                        // inizializzo la variabile di check_unicita a "false"
 	GF_Bathroom_heating.sendCommand(OFF) // All'inizio il riscaldamento è spento
 	GF_Living_heating1.sendCommand(OFF)
-	GF_Living_heating1.sendCommand(OFF)
+	GF_Living_heating2.sendCommand(OFF)
 	GF_Kitchen_heating.sendCommand(OFF)
-	FF_Bedroom_heating.sendCommand(OFF)
 	FF_Childrenroom_heating.sendCommand(OFF)
+	FF_Bedroom_heating.sendCommand(OFF)
 	if (Managing_System_Active.state == ON) Managing_System_Active.postUpdate(OFF)  
-end
+	GF_Bathroom_Fire_Alarm.sendCommand(OFF)
+	GF_Living_Fire_Alarm.sendCommand(OFF)
+	GF_Kitchen_Fire_Alarm.sendCommand(OFF)
+	FF_Bedroom_Fire_Alarm.sendCommand(OFF)
+end 
 
 rule "Monitor_m_gf"
 when
@@ -59,7 +73,8 @@ then
 	T_lv2= GF_LZone2_Temperature.state as Number      
 	T_bat= GF_Bathroom_Temperature.state as Number           
 	T_kit= GF_Kitchen_Temperature.state as Number                
-    Target_Temp_gf= GF_Temperature_Setpoint.state as Number
+    Target_Temp_gf= GF_Temperature_Setpoint.state as Number 
+	gf_call= true
     sendCommand(start_m_gf, OFF)
 	sendCommand(gf_slave_to_hc_master, ON)
 end
@@ -71,6 +86,7 @@ then
 	T_bed= FF_Bedroom_Temperature.state as Number   // Aquisizione knowedge 
 	T_cb= FF_Childrenroom_Temperature.state as Number
 	Target_Temp_ff= FF_Temperature_Setpoint.state as Number
+	ff_call= true
 	sendCommand(start_m_ff, OFF)
 	sendCommand(ff_slave_to_hc_master, ON)
 end
@@ -80,17 +96,25 @@ when
 	Item gf_slave_to_hc_master received command ON or
 	Item ff_slave_to_hc_master received command ON 
 then
-	sendCommand(gf_slave_to_hc_master, OFF)
-	sendCommand(ff_slave_to_hc_master, OFF)
-	sendCommand(start_a_hc, ON)
+	if (gf_slave_to_hc_master.state== ON) {
+		sendCommand(gf_slave_to_hc_master, OFF)
+	}
+
+	else if (ff_slave_to_hc_master.state== ON){
+		sendCommand(ff_slave_to_hc_master, OFF)
+	}
+	
+	do {
+	
+	} while (start_a_hc.state== ON)
+
+	sendCommand(start_a_hc, ON) 
 end
 
 rule "Analyze_a_hc"
 when
 	Item start_a_hc received command ON
 then
-	sendCommand(start_a_hc, OFF) 
-
     // verifico se ci sono le condizioni per un addattamento
 	if(Heating_Mode.state!='STOP' && (((T_bat < (Target_Temp_gf-Hysteresis)) && GF_Bathroom_heating.state== OFF) ||  
 	((T_bat > (Target_Temp_gf+Hysteresis)) && GF_Bathroom_heating.state== ON) ||
@@ -99,7 +123,7 @@ then
 	((T_lv2 < (Target_Temp_gf-Hysteresis)) && GF_Living_heating2.state== OFF) ||
 	((T_lv2 > (Target_Temp_gf+Hysteresis)) && GF_Living_heating2.state== ON) ||
 	((T_kit < (Target_Temp_gf-Hysteresis)) && GF_Kitchen_heating.state== OFF) ||
-	((T_kit > (Target_Temp_gf+Hysteresis)) && GF_Kitchen_heating.state== ON))){
+	((T_kit > (Target_Temp_gf+Hysteresis)) && GF_Kitchen_heating.state== ON))) {
 		check_unicita= true                
 		adaptation_required_gf= true
 	} 
@@ -111,26 +135,28 @@ then
 		check_unicita= true
 		adaptation_required_ff= true
 	}
-	if(check_unicita && (adaptation_required_gf || adaptation_required_ff)) { // se una delle variabili di adattamento è attiva, ed è stata
-		createTimer(now.plusSeconds(0.5)) [|                          // attivata da questa componente A (e non da un altro ciclo A
-				sendCommand(start_p_hc, ON)                           // precedente) allora avvia la componente P
+	if(check_unicita && (adaptation_required_gf || adaptation_required_ff)) {
+		createTimer(now.plusSeconds(0.5)) [|                         
+				sendCommand(start_p_hc, ON)                           
 			]
     }
   	else{
-		if (Math::random > 0.5) {               // in caso non ci sia bisogno di adattamento, con probabilità 50% ritorna nel monitor 
-			createTimer(now.plusSeconds(1)) [|  // gf o nel monitor ff
-				sendCommand(gf_slave_to_hc_master, OFF)
-        		sendCommand(start_m_gf, ON)
+	    if (gf_call) {
+			gf_call= false
+			createTimer(now.plusSeconds(2)) [|  
+    			sendCommand(start_m_gf, ON)
 			]
-		}else {
-			createTimer(now.plusSeconds(1)) [|
-				sendCommand(ff_slave_to_hc_master, OFF)
-				sendCommand(start_m_ff, ON)
-			]
+	  }
+		else if (ff_call) {
+			ff_call= false
+			createTimer(now.plusSeconds(2)) [| 
+    			sendCommand(start_m_ff, ON)
+		  	]
 		}
     }
 	check_unicita = false
-end
+	sendCommand(start_a_hc, OFF) 
+end 
 
 rule "Plan_p_hc"
 when
@@ -164,7 +190,7 @@ then
 				gf_kit= 2
 			}
 			sendCommand(start_e_gf, ON)
-		}
+		} 
 	}
 
 	if (adaptation_required_ff) {       // in caso la variabile di adattamento ff sia attiva guarda in quale esatta stanza è richiesta 
@@ -227,8 +253,12 @@ then
 
 	createTimer(now.plusSeconds(1)) [|
 		sendCommand(start_e_gf, OFF)
-    	sendCommand(start_m_gf, ON)
-			
+    	if (gf_call) {
+			gf_call= false
+			createTimer(now.plusSeconds(2)) [|  
+    			sendCommand(start_m_gf, ON)
+			]
+	     }
       ]
 end 
 
@@ -254,7 +284,12 @@ then                           // si va a controllare lo stato delle variabili d
 	}
 
 	createTimer(now.plusSeconds(1)) [|
-            sendCommand(start_m_ff, ON)
-			sendCommand(start_e_ff, OFF)
+		sendCommand(start_e_ff, OFF)
+        if (ff_call) {
+			ff_call= false
+			createTimer(now.plusSeconds(2)) [|  
+    			sendCommand(start_m_ff, ON)
+			]
+	      }
       ]
 end 

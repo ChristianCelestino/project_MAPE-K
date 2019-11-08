@@ -8,7 +8,7 @@ var boolean gf_call
 var boolean ff_call
 var boolean adaptation_required_gf // varibili per la richiesta di adattamento per gf e ff
 var boolean adaptation_required_ff
-var boolean check // variabile che nella componente A filtra il caso in cui ci sia un altro ciclo nella componente P e non abbia
+var boolean check_unicita // variabile che nella componente A filtra il caso in cui ci sia un altro ciclo nella componente P e non abbia
                   // abbia ancora disabilitato i flag di adattamento
 
 var Number T_lv1    // Variabili per la knowledge                                   
@@ -51,7 +51,7 @@ then
 	flag_precedenza_gf= false
 	adaptation_required_gf= false // inizializzo le variabili di adattamento a "false"
 	adaptation_required_ff= false
-	check= false                        // inizializzo la variabile di check a "false"
+	check_unicita= false                        // inizializzo la variabile di check_unicita a "false"
 	GF_Bathroom_heating.sendCommand(OFF) // All'inizio il riscaldamento è spento
 	GF_Living_heating1.sendCommand(OFF)
 	GF_Living_heating2.sendCommand(OFF)
@@ -138,7 +138,7 @@ then
 	((T_lv2 > (Target_Temp_gf+Hysteresis)) && GF_Living_heating2.state== ON) ||
 	((T_kit < (Target_Temp_gf-Hysteresis)) && GF_Kitchen_heating.state== OFF) ||
 	((T_kit > (Target_Temp_gf+Hysteresis)) && GF_Kitchen_heating.state== ON))) {
-		check= true                
+		check_unicita= true                
 		adaptation_required_gf= true
 	} 
 	
@@ -146,10 +146,10 @@ then
 	((T_bed > (Target_Temp_ff+Hysteresis)) && FF_Bedroom_heating.state== ON) ||
 	((T_cb < (Target_Temp_ff-Hysteresis)) && FF_Childrenroom_heating.state== OFF) ||
 	((T_cb > (Target_Temp_ff+Hysteresis)) && FF_Childrenroom_heating.state== ON))) {
-		check= true
+		check_unicita= true
 		adaptation_required_ff= true
 	}
-	if(check && (adaptation_required_gf || adaptation_required_ff)) {
+	if(check_unicita && (adaptation_required_gf || adaptation_required_ff)) {
 		 if (gf_call && ((!ff_call) || (flag_precedenza_gf))) {
 			gf_call= false
 			flag_precedenza_gf= false
@@ -184,7 +184,7 @@ then
 		else 
 			GF_Kitchen_Fire_Alarm.sendCommand(ON)
     }
-	check = false
+	check_unicita = false
 	sendCommand(start_a_hc, OFF) 
 end 
 

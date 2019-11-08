@@ -3,7 +3,7 @@ val Random random = new Random()
 
 var boolean adaptation_required_gf
 var boolean adaptation_required_ff
-var boolean check
+var boolean check_unicita
 
 var Number T_lv1    // Variabili per la knowledge                                   
 var Number T_lv2  
@@ -40,7 +40,7 @@ then
 	ff_cb= 0
 	adaptation_required_gf= false
 	adaptation_required_ff= false
-	check= false
+	check_unicita= false
 	GF_Bathroom_heating.sendCommand(OFF) // All'inizio il riscaldamento è spento
 	GF_Living_heating1.sendCommand(OFF)
 	GF_Living_heating1.sendCommand(OFF)
@@ -104,7 +104,7 @@ then
 	((T_lv2 > (Target_Temp_gf+Hysteresis)) && GF_Living_heating2.state== ON) ||
 	((T_kit < (Target_Temp_gf-Hysteresis)) && GF_Kitchen_heating.state== OFF) ||
 	((T_kit > (Target_Temp_gf+Hysteresis)) && GF_Kitchen_heating.state== ON))){
-		check= true
+		check_unicita= true
 		adaptation_required_gf= true
 	} */
 
@@ -112,11 +112,11 @@ then
 	((T_bed > (Target_Temp_ff+Hysteresis)) && FF_Bedroom_heating.state== ON) ||
 	((T_cb < (Target_Temp_ff-Hysteresis)) && FF_Childrenroom_heating.state== OFF) ||
 	((T_cb > (Target_Temp_ff+Hysteresis)) && FF_Childrenroom_heating.state== ON))) {
-		check= true
+		check_unicita= true
 		adaptation_required_ff= true
 		FF_Children_Bedroom_Fire_Alarm.sendCommand(OFF)
 	}
-	if(check && (adaptation_required_gf || adaptation_required_ff)) {
+	if(check_unicita && (adaptation_required_gf || adaptation_required_ff)) {
         sendCommand(start_p_hc, ON)
     }
   	else{
@@ -129,7 +129,7 @@ then
      		sendCommand(start_m_ff, ON)
 		}
     }
-	check = false
+	check_unicita = false
 	sendCommand(start_a_hc, OFF)
 end
 

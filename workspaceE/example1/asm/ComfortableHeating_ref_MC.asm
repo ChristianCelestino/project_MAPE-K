@@ -1,4 +1,4 @@
-//version of ComfortableHeating_ref adapted for model checking
+//version of ComfortableHeating_ref adapted for model check_unicitaing
 
 asm ComfortableHeating_ref_MC
 import StandardLibrary
