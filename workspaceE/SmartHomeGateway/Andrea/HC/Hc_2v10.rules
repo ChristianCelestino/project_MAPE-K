@@ -123,6 +123,8 @@ then
 		} while (gf_mod || ff_mod)
         
 	} while (start_a_hc.state== ON)
+
+	sendCommand (start_a_hc, ON)
 end
 
 rule "Analyze_a_hc"
