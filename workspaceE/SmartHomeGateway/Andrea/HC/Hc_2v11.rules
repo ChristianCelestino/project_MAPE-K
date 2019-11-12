@@ -5,9 +5,7 @@ var boolean flag_precedenza_ff
 var boolean gf_call
 var boolean ff_call
 var boolean adaptation_required_gf        // varibili per la richiesta di adattamento per gf e ff
-var boolean adaptation_required_ff
-var boolean check_unicita                // variabile che nella componente A filtra il caso in cui ci sia un altro ciclo nella componente P e non abbia
-                                        // abbia ancora disabilitato i flag di adattamento
+var boolean adaptation_required_ff                                        // abbia ancora disabilitato i flag di adattamento
 
 var Number T_lv1    // Variabili per la knowledge                                   
 var Number T_lv2  
@@ -52,7 +50,6 @@ then
 	flag_precedenza_gf= false
 	adaptation_required_gf= false              // inizializzo le variabili di adattamento a "false"
 	adaptation_required_ff= false
-	check_unicita= false                     // inizializzo la variabile di "check_unicita" utilizzata dalla componente A per scartare eventuali 
 
 	GF_Bathroom_heating.sendCommand(OFF)    // All'inizio il riscaldamento è spento
 	GF_Living_heating1.sendCommand(OFF)
@@ -73,10 +70,7 @@ then
 	T_kit= GF_Kitchen_Temperature.state as Number                
     Target_Temp_gf= GF_Temperature_Setpoint.state as Number 
 	if (!flag_precedenza_ff) {
-		if (ff_call)                    // nel caso l'altro piano abbiamo il flag precedenza spento, ma il flag call attivo, vuol dire che è gia stato eseguito un ciclo M_GF
-          flag_precedenza_ff= true     // (avente precedente sul piano FF) dunque ora bisogna dare precedenza al piano FF che non ha ancora eseguito il suo ciclo di analisi
-			        
-		else                                // nel caso l'altro flag precedenza e call siano spenti allora questo ciclo ha la precedenza in quanto è arrivato per primo
+		     // (avente precedente sul piano FF) dunque ora bisogna dare precedenza al piano FF che non ha ancora eseguito il suo ciclo di analisi                              // nel caso l'altro flag precedenza e call siano spenti allora questo ciclo ha la precedenza in quanto è arrivato per primo
 			flag_precedenza_gf= true       
 	}
 	gf_call= true
@@ -92,11 +86,7 @@ then
 	T_cb= FF_Childrenroom_Temperature.state as Number
 	Target_Temp_ff= FF_Temperature_Setpoint.state as Number
 	if (!flag_precedenza_gf) {
-		if (gf_call)                    // nel caso l'altro piano abbiamo il flag precedenza spento, ma il flag call attivo, vuol dire che è gia stato eseguito un ciclo M_FF
-            flag_precedenza_gf= true   // (avente precedente sul piano GF) dunque ora bisogna dare precedenza al piano FF che non ha ancora eseguito il suo ciclo di analisi
-			
-
-		else                             // nel caso l'altro flag precedenza e call siano spenti allora questo ciclo ha la precedenza in quanto è arrivato per primo
+		                             // nel caso l'altro flag precedenza e call siano spenti allora questo ciclo ha la precedenza in quanto è arrivato per primo
 			flag_precedenza_ff= true
 	} 
 	ff_call= true
@@ -139,8 +129,7 @@ then
 	((T_lv2 < (Target_Temp_gf-Hysteresis)) && GF_Living_heating2.state== OFF) ||
 	((T_lv2 > (Target_Temp_gf+Hysteresis)) && GF_Living_heating2.state== ON) ||
 	((T_kit < (Target_Temp_gf-Hysteresis)) && GF_Kitchen_heating.state== OFF) ||
-	((T_kit > (Target_Temp_gf+Hysteresis)) && GF_Kitchen_heating.state== ON))) {
-		check_unicita= true                
+	((T_kit > (Target_Temp_gf+Hysteresis)) && GF_Kitchen_heating.state== ON))) {           
 		adaptation_required_gf= true
 	} 
 	
@@ -148,40 +137,46 @@ then
 	((T_bed > (Target_Temp_ff+Hysteresis)) && FF_Bedroom_heating.state== ON) ||
 	((T_cb < (Target_Temp_ff-Hysteresis)) && FF_Childrenroom_heating.state== OFF) ||
 	((T_cb > (Target_Temp_ff+Hysteresis)) && FF_Childrenroom_heating.state== ON))) {
-		check_unicita= true
 		adaptation_required_ff= true
 	}
-	if(check_unicita && (adaptation_required_gf || adaptation_required_ff)) {   
-		 if (gf_call && (!ff_call || flag_precedenza_gf)) {                     // verifico quale dei 2 cicli ha la precedenza e vado ad abilitate le variabili mod rispettive
+
+	if(adaptation_required_gf || adaptation_required_ff) {   
+		 if (gf_call && flag_precedenza_gf) {                     // verifico quale dei 2 cicli ha la precedenza e vado ad abilitate le variabili mod rispettive
 			gf_call= false
 			flag_precedenza_gf= false
+			if (ff_call && !flag_precedenza_ff)
+				flag_precedenza_ff= true
+
 			gf_mod= true
 	 	}
-		else if (ff_call && (!gf_call || flag_precedenza_ff)) {
+		else if (ff_call && flag_precedenza_ff) {
 			ff_call= false
 			flag_precedenza_ff= false
+			if (gf_call && !flag_precedenza_gf)
+				flag_precedenza_gf= true
 			ff_mod= true
 		}	
                       
 		sendCommand(start_p_hc, ON)                           
     }
   	else{
-	    if (gf_call && (!ff_call || flag_precedenza_gf)) {                      // verifico quale dei 2 cicli ha la precedenza e vado ad abilitate le variabili mod rispettive
+	    if (gf_call && flag_precedenza_gf) {                      // verifico quale dei 2 cicli ha la precedenza e vado ad abilitate le variabili mod rispettive
 			gf_call= false
-			flag_precedenza_gf= false
-			createTimer(now.plusSeconds(1)) [|  
-    			sendCommand(start_m_gf, ON)
-			]
+			flag_precedenza_gf= false 
+			if (ff_call && !flag_precedenza_ff)
+				flag_precedenza_ff= true
+
+    		sendCommand(start_m_gf, ON)
 	  }
-		else if (ff_call && (!gf_call || flag_precedenza_ff)) {
+		else if (ff_call && flag_precedenza_ff) {
 			ff_call= false
 			flag_precedenza_ff= false
-			createTimer(now.plusSeconds(1)) [| 
-    			sendCommand(start_m_ff, ON)
-		  	]
+			if (gf_call && !flag_precedenza_gf)
+				flag_precedenza_gf= true
+
+    		sendCommand(start_m_ff, ON)
 		}
     }
-	check_unicita = false
 	sendCommand(start_a_hc, OFF) 
 end 
 
