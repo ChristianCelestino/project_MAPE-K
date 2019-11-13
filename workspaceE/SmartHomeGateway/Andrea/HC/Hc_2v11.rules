@@ -5,7 +5,7 @@ var boolean flag_precedenza_ff
 var boolean gf_call
 var boolean ff_call
 var boolean adaptation_required_gf        // varibili per la richiesta di adattamento per gf e ff
-var boolean adaptation_required_ff                                        // abbia ancora disabilitato i flag di adattamento
+var boolean adaptation_required_ff                                        
 
 var Number T_lv1    // Variabili per la knowledge                                   
 var Number T_lv2  
@@ -69,8 +69,8 @@ then
 	T_bat= GF_Bathroom_Temperature.state as Number           
 	T_kit= GF_Kitchen_Temperature.state as Number                
     Target_Temp_gf= GF_Temperature_Setpoint.state as Number 
-	if (!flag_precedenza_ff) {
-		     // (avente precedente sul piano FF) dunque ora bisogna dare precedenza al piano FF che non ha ancora eseguito il suo ciclo di analisi                              // nel caso l'altro flag precedenza e call siano spenti allora questo ciclo ha la precedenza in quanto è arrivato per primo
+	if (!flag_precedenza_ff) {      // nel caso il flag_precedenza_ff sia spento allora questo ciclo ha la precedenza in quanto è arrivato per primo
+
 			flag_precedenza_gf= true       
 	}
 	gf_call= true
@@ -86,7 +86,7 @@ then
 	T_cb= FF_Childrenroom_Temperature.state as Number
 	Target_Temp_ff= FF_Temperature_Setpoint.state as Number
 	if (!flag_precedenza_gf) {
-		                             // nel caso l'altro flag precedenza e call siano spenti allora questo ciclo ha la precedenza in quanto è arrivato per primo
+ 									// nel caso il flag_precedenza_gf sia spento allora questo ciclo ha la precedenza in quanto è arrivato per primo
 			flag_precedenza_ff= true
 	} 
 	ff_call= true
@@ -107,7 +107,7 @@ then
 		sendCommand(ff_slave_to_hc_master, OFF)
 	}
 	
-	do {                          // serie di cicli do-while che garantisce la mutua esclusione nella componente A e nel caso ci 
+	do {                          // serie di cicli do-while che garantisce la mutua esclusione nella componente A, e nel caso ci 
 		do {                      // ci sia un addatamento garantisce mutua esclusione fino alle componenti E cosi da non sovrascrivere
                                   // i flag gf_mod e ff_mod
 		} while (gf_mod || ff_mod)
@@ -121,7 +121,7 @@ rule "Analyze_a_hc"
 when
 	Item start_a_hc received command ON
 then
-    // verifico se ci sono le condizioni per un addattamento
+    // verifico se ci sono le condizioni per un addattamento per il gf
 	if(Heating_Mode.state!='STOP' && (((T_bat < (Target_Temp_gf-Hysteresis)) && GF_Bathroom_heating.state== OFF) ||  
 	((T_bat > (Target_Temp_gf+Hysteresis)) && GF_Bathroom_heating.state== ON) ||
 	((T_lv1 < (Target_Temp_gf-Hysteresis)) && GF_Living_heating1.state== OFF) ||
@@ -132,7 +132,7 @@ then
 	((T_kit > (Target_Temp_gf+Hysteresis)) && GF_Kitchen_heating.state== ON))) {           
 		adaptation_required_gf= true
 	} 
-	
+	// verifico se ci sono le condizioni per un addattamento per il ff
 	if (Heating_Mode.state!='STOP' && (((T_bed < (Target_Temp_gf-Hysteresis)) && FF_Bedroom_heating.state== OFF) ||
 	((T_bed > (Target_Temp_ff+Hysteresis)) && FF_Bedroom_heating.state== ON) ||
 	((T_cb < (Target_Temp_ff-Hysteresis)) && FF_Childrenroom_heating.state== OFF) ||
@@ -140,24 +140,25 @@ then
 		adaptation_required_ff= true
 	}
 
-	if(adaptation_required_gf || adaptation_required_ff) {   
-		 if (gf_call && flag_precedenza_gf) {                     // verifico quale dei 2 cicli ha la precedenza e vado ad abilitate le variabili mod rispettive
+	if(adaptation_required_gf || adaptation_required_ff) {   // verifico quale dei 2 cicli ha la precedenza e vado ad abilitate le variabili mod rispettive
+		 if (gf_call && flag_precedenza_gf) {    // disabilito i flag di call e di precedenza del piano gf se quest'ultimo ha la precedenza                 
 			gf_call= false
 			flag_precedenza_gf= false
-			if (ff_call && !flag_precedenza_ff)
-				flag_precedenza_ff= true
+			if (ff_call && !flag_precedenza_ff)  // abilito il flag precedenza della controparte, nel caso sia attivo un monitor senza procedenza di quest'ultimo
+				flag_precedenza_ff= true		// (siccome ci deve essere sempre un monitor con precedenza)
 
-			gf_mod= true
+			gf_mod= true      // abilito il flag di gf_mod per tener traccia del fatto che è stato il piano gf a richiedere un adattamento
 	 	}
-		else if (ff_call && flag_precedenza_ff) {
+		else if (ff_call && flag_precedenza_ff) {  // disabilito i flag di call e di precedenza del piano ff se quest'ultimo ha la precedenza
 			ff_call= false
 			flag_precedenza_ff= false
-			if (gf_call && !flag_precedenza_gf)
-				flag_precedenza_gf= true
-			ff_mod= true
+			if (gf_call && !flag_precedenza_gf) // abilito il flag precedenza della controparte, nel caso sia attivo un monitor senza procedenza di quest'ultimo
+				flag_precedenza_gf= true	   // (siccome ci deve essere sempre un monitor con precedenza)
+
+			ff_mod= true	// abilito il flag di ff_mod per tener traccia del fatto che è stato il piano ff a richiedere un adattamento
 		}	
                       
-		sendCommand(start_p_hc, ON)                           
+		sendCommand(start_p_hc, ON)      // attivo componente P  
     }
   	else{
 	    if (gf_call && flag_precedenza_gf) {                      // verifico quale dei 2 cicli ha la precedenza e vado ad abilitate le variabili mod rispettive
