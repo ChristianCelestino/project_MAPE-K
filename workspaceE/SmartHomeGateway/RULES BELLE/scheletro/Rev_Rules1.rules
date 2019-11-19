@@ -1,0 +1,199 @@
+import java.util.concurrent.locks.ReentrantLock
+
+var Number counter_chm
+var Number counter_hs0
+var Number counter_hs1
+var boolean adaptation_required_hs0
+var boolean adaptation_required_hs1
+var boolean hs0_loop
+var boolean hs1_loop
+var boolean hs1_priority
+var boolean hs0_priority
+
+var val ReentrantLock lock = new ReentrantLock
+var val ReentrantLock locke = new ReentrantLock
+
+rule "StartLoop_ComfortableHeating"
+when
+	System started
+then
+	counter_chm = 0
+	logInfo("ComfortableHeating.rules", "Starting MAPE loop for group (chm), counter_chm = " + counter_chm)
+	counter_hs0 = 0
+	logInfo("ComfortableHeating.rules", "Starting MAPE loop for group (hs0), counter_hs0 = " + counter_hs0)
+	counter_hs1 = 0
+	logInfo("ComfortableHeating.rules", "Starting MAPE loop for group (hs1), counter_hs1 = " + counter_hs1)
+	start_a_chm.sendCommand(OFF)
+	start_p_chm.sendCommand(OFF)
+	start_m_hs0.sendCommand(ON)
+	start_e_hs0.sendCommand(OFF)
+	start_m_hs1.sendCommand(ON)
+	start_e_hs1.sendCommand(OFF)
+	adaptation_required_hs0 = false
+	adaptation_required_hs1 = false
+	hs0_loop = false
+	hs1_loop = false
+    hs1_priority = false
+    hs0_priority = false
+end
+
+rule "Monitor_m_hs0"
+when
+	Item start_m_hs0 received command ON
+then
+    sendCommand(start_m_hs0, OFF)
+	counter_hs0 = counter_hs0 + 1
+	logInfo("ComfortableHeating.rules", "Monitor for group (hs0) active, counter_hs0 = " + counter_hs0)
+    hs1=true
+	try{
+		lock.lock()
+        if (!hs1_priority) 
+            hs0_priority= true
+	} catch(Throwable t) { }
+    finally {
+        do{
+
+        } while(!hs0_priority && start_a_chm.state==ON)
+        sendCommand(start_a_chm, ON)
+        lock.unlock()
+    }
+end
+
+rule "Monitor_m_hs1"
+when
+	Item start_m_hs1 received command ON
+then
+	counter_hs1 = counter_hs1 + 1
+	logInfo("ComfortableHeating.rules", "Monitor for group (hs1) active, counter_hs1 = " + counter_hs1)
+	sendCommand(start_m_hs1, OFF)
+    hs1_loop=true
+	try{
+		lock.lock()
+        if (!hs0_priority)
+            hs1_priority = true
+	} catch(Throwable t) { }
+    finally {
+        do{
+
+        } while (!hs1_priority && start_a_chm.state==ON)
+        sendCommand(start_a_chm, ON)
+        lock.unlock()
+    }        
+
+end
+
+rule "Analyze_a_chm"
+when
+	Item start_a_chm received command ON
+then
+	counter_chm = counter_chm + 1
+	logInfo("ComfortableHeating.rules", "Analyze for group (chm) active, counter_chm = " + counter_chm)
+	sendCommand(start_a_chm, OFF)
+
+    if(((Math::random * 100.0).intValue + 1) <= 50 ){
+        adaptation_required_hs0 = true
+    } else {
+        adaptation_required_hs0 = false
+    }
+    if(((Math::random * 100.0).intValue + 1) <= 50 ){
+        adaptation_required_hs1 = true
+    } else {
+        adaptation_required_hs1 = false
+    }
+
+    if(adaptation_required_hs0 || adaptation_required_hs1){
+        logInfo("ComfortableHeating.rules", "Adaptation required for hs0, proceeding with loop.")
+        sendCommand(start_p_chm, ON)
+    } else{
+        logInfo("ComfortableHeating.rules", "Adaptation not required for hs0, resetting loop.")
+        counter_chm = 0
+        if(hs1_priority){
+            hs1_priority=false
+            hs1_loop=false
+            if(hs0_loop && !hs0_priority)
+                hs0_priority=true
+        }
+        else if(hs0_priority){
+            hs0_priority=false
+            hs0_loop=false
+            if(hs1_loop && !hs1_priority)
+                hs1_priority==true
+        }
+
+    }
+sendCommand(start_a_chm,OFF)
+end
+
+rule "Plan_p_chm"
+when
+	Item start_p_chm received command ON
+then
+	counter_chm = counter_chm + 1
+	logInfo("ComfortableHeating.rules", "Plan_p_chm for group (chm) active, counter_chm = " + counter_chm)
+	counter_chm = 0
+	sendCommand(start_p_chm, OFF)
+	if(adaptation_required_hs0){
+        adaptation_required_hs0=false
+		sendCommand(start_e_hs0, ON)
+	}
+    if (adaptation_required_hs1){
+        adaptation_required_hs1=false
+		sendCommand(start_e_hs1, ON)
+	}
+end
+
+rule "Exec_e_hs0"
+when
+	Item start_e_hs0 received command ON
+then
+	counter_hs0 = counter_hs0 + 1
+	logInfo("ComfortableHeating.rules", "Exec active for group (hs0), counter_hs0 = " + counter_hs0)
+	counter_hs0 = 0
+	sendCommand(start_e_hs0, OFF)
+    try{
+        lock.lock()
+        if(hs1_priority){
+            hs1_priority=false
+            hs1_loop=false
+            if(hs0_loop && !hs0_priority)
+                hs0_priority=true
+        }
+        else if(hs0_priority){
+            hs0_priority=false
+            hs0_loop=false
+            if(hs1_loop && !hs1_priority)
+                hs1_priority==true
+        }
+    } catch(Throwable t) { }
+    finally { 
+	    sendCommand(start_e_hs0, ON)
+    }
+end
+
+rule "Exec_e_hs1"
+when
+	Item start_e_hs1 received command ON
+then
+	counter_hs1 = counter_hs1 + 1
+	logInfo("ComfortableHeating.rules", "Exec active for group (hs1), counter_hs1 = " + counter_hs1)
+	counter_hs1 = 0
+	sendCommand(start_e_hs1, OFF)
+	try{
+        lock.lock()
+        if(hs1_priority){
+            hs1_priority=false
+            hs1_loop=false
+            if(hs0_loop && !hs0_priority)
+                hs0_priority=true
+        }
+        else if(hs0_priority){
+            hs0_priority=false
+            hs0_loop=false
+            if(hs1_loop && !hs1_priority)
+                hs1_priority==true
+        }
+    } catch(Throwable t) { }
+    finally { 
+	    sendCommand(start_e_hs1, ON)
+    }
+end
