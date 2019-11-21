@@ -1,0 +1,210 @@
+//import java.util.concurrent.locks.ReentrantLock
+
+var boolean adaptation_required_hs0
+var boolean adaptation_required_hs1
+var boolean hs0_loop
+var boolean hs1_loop
+var boolean hs1_priority
+var boolean hs0_priority
+var boolean hs0_mod
+var boolean hs1_mod
+
+/*val ReentrantLock lock_m  = new ReentrantLock()
+val ReentrantLock lock_e = new ReentrantLock()*/
+
+rule "StartLoop_ComfortableHeating"
+when
+	System started
+then
+	start_a_chm.sendCommand(OFF)
+	start_p_chm.sendCommand(OFF)
+	start_m_hs0.sendCommand(ON)
+	start_e_hs0.sendCommand(OFF)
+	start_m_hs1.sendCommand(ON)
+	start_e_hs1.sendCommand(OFF)
+	adaptation_required_hs0 = false
+	adaptation_required_hs1 = false
+	hs0_loop = false
+	hs1_loop = false
+    hs1_priority = false
+    hs0_priority = false
+    hs0_mod = false
+    hs1_mod = false
+end
+
+rule "Monitor_m_hs0"
+when
+	Item start_m_hs0 received command ON
+then
+   /* lock_m.lock()
+
+	try{ */
+        hs0_loop= true
+
+        if (!hs1_priority) 
+            hs0_priority= true
+//	} 
+//    finally {
+        sendCommand(start_m_hs0, OFF)
+        sendCommand(hs0_to_chm, ON)
+    /*    lock_m.unlock()
+    }*/
+end
+
+rule "Monitor_m_hs1"
+when
+	Item start_m_hs1 received command ON
+then
+   /* lock_m.lock()
+	try{*/
+        hs1_loop= true
+        if (!hs0_priority)
+            hs1_priority = true
+
+/*	} 
+    finally {*/
+        sendCommand(start_m_hs1, OFF)
+        sendCommand(hs1_to_chm, ON)
+    /*    lock_m.unlock()
+    }    */    
+end
+
+rule "Aggregator_m_hs0_m_hs1_a_chm"
+when
+	Item hs1_to_chm received update ON or
+    Item hs0_to_chm received update ON
+then
+	if(hs0_to_chm.state== ON)
+		sendCommand(hs0_to_chm, OFF)
+
+	if(hs1_to_chm.state== ON)
+		sendCommand(hs1_to_chm, OFF)
+
+    do {
+        do {                      
+                                 
+		} while (hs0_mod || hs1_mod) 
+
+    }while (start_a_chm.state== ON)
+
+    sendCommand (start_a_chm, ON)
+end
+
+rule "Analyze_a_chm"
+when
+	Item start_a_chm received command ON
+then
+    if(((Math::random * 100.0).intValue + 1) <= 50 ){
+        adaptation_required_hs0 = true
+    } else {
+        adaptation_required_hs0 = false
+    }
+    if(((Math::random * 100.0).intValue + 1) <= 50 ){
+        adaptation_required_hs1 = true
+    } else {
+        adaptation_required_hs1 = false
+    }
+
+    if(adaptation_required_hs0 || adaptation_required_hs1){
+        if(hs1_priority && hs1_loop){
+            hs1_priority= false
+            hs1_loop= false
+            if(hs0_loop && !hs0_priority)
+                hs0_priority= true
+
+            hs1_mod= true
+        }
+        else if(hs0_priority && hs0_loop){
+            hs0_priority= false
+            hs0_loop= false
+            if(hs1_loop && !hs1_priority)
+                hs1_priority= true
+
+            hs0_mod= true
+        }
+
+        sendCommand(start_p_chm, ON)
+    } else{
+        if(hs0_priority){
+            hs0_priority= false
+            hs0_loop= false
+            if(hs1_loop && !hs1_priority)
+                hs1_priority= true
+
+            sendCommand (start_m_hs0, ON)
+        }
+       else if(hs1_priority){
+            hs1_priority= false
+            hs1_loop= false
+            if(hs0_loop && !hs0_priority)
+                hs0_priority= true
+
+            sendCommand (start_m_hs1, ON)
+        }
+    }
+
+    sendCommand (start_a_chm, OFF)
+end
+
+rule "Plan_p_chm"
+when
+	Item start_p_chm received command ON
+then	
+	if(adaptation_required_hs0){
+        adaptation_required_hs0= false
+		sendCommand(start_e_hs0, ON)
+	}
+
+    if (adaptation_required_hs1){
+        adaptation_required_hs1= false
+		sendCommand(start_e_hs1, ON)
+	}
+    sendCommand(start_p_chm, OFF)
+end
+
+rule "Exec_e_hs0"
+when
+	Item start_e_hs0 received command ON
+then
+   /* try{
+        lock_e.lock()*/
+
+        if (hs0_mod) {           
+		    hs0_mod= false
+		    sendCommand(start_m_hs0, ON)
+	    }
+        else if (hs1_mod) {
+            hs1_mod= false
+            sendCommand(start_m_hs1, ON)
+        }
+        sendCommand(start_e_hs0, OFF)
+        
+    /*} 
+    finally { 
+        lock_e.unlock()
+    }*/
+end
+
+rule "Exec_e_hs1"
+when
+	Item start_e_hs1 received command ON
+then
+ /*    try{
+        lock_e.lock()*/
+
+        if (hs1_mod) {
+            hs1_mod= false
+            sendCommand(start_m_hs1, ON)
+        }
+        else if (hs0_mod) {           
+		    hs0_mod= false
+		    sendCommand(start_m_hs0, ON)
+	    }
+        
+        sendCommand(start_e_hs1, OFF)
+        
+  /*  } 
+    finally { 
+        lock_e.unlock()
+    }*/
+end 

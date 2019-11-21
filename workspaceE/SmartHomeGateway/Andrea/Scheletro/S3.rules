@@ -1,0 +1,185 @@
+var boolean gf_mod
+var boolean ff_mod
+var boolean flag_precedenza_gf
+var boolean flag_precedenza_ff
+var boolean gf_call
+var boolean ff_call
+var boolean adaptation_required_gf        // varibili per la richiesta di adattamento per gf e ff
+var boolean adaptation_required_ff                                        
+
+rule "StartLoop_MySmartHomeHC"
+when
+	System started
+then
+	start_m_gf.sendCommand(ON)  // Setto le componente a OFF ad eccezione dei monitor
+	start_m_ff.sendCommand(ON)
+	start_a_hc.sendCommand(OFF)
+	start_p_hc.sendCommand(OFF)
+	start_e_gf.sendCommand(OFF)
+	start_e_ff.sendCommand(OFF)
+
+	gf_mod= false                   // iniziializzo i flag di "mod" utilizzati per tener traccia di quali monitor li abbia chiamati all'interno delle componenti E)
+	ff_mod= false
+	gf_call= false                  // inizializzo i flag di "call" e di "precedenza" utilizzati dalla componente A per poter richiamare 
+	ff_call= false                 //  l'esatto monitor che ha avviato tale componente
+	flag_precedenza_ff= false
+	flag_precedenza_gf= false
+	adaptation_required_gf= false              // inizializzo le variabili di adattamento a "false"
+	adaptation_required_ff= false
+
+	if (Managing_System_Active.state == ON) Managing_System_Active.postUpdate(OFF)
+end 
+
+rule "Monitor_m_gf"
+when
+	Item start_m_gf received command ON
+then 
+	if (!flag_precedenza_ff) {      // nel caso il flag_precedenza_ff sia spento allora questo ciclo ha la precedenza in quanto è arrivato per primo
+
+			flag_precedenza_gf= true       
+	}
+	gf_call= true
+    sendCommand(start_m_gf, OFF)
+	sendCommand(gf_slave_to_hc_master, ON)
+end
+
+rule "Monitor_m_ff"
+when
+	Item start_m_ff received command ON
+then
+	T_bed= FF_Bedroom_Temperature.state as Number   // Aquisizione knowedge 
+	T_cb= FF_Childrenroom_Temperature.state as Number
+	Target_Temp_ff= FF_Temperature_Setpoint.state as Number
+	if (!flag_precedenza_gf) {
+ 									// nel caso il flag_precedenza_gf sia spento allora questo ciclo ha la precedenza in quanto è arrivato per primo
+			flag_precedenza_ff= true
+	} 
+	ff_call= true
+	sendCommand(start_m_ff, OFF)
+	sendCommand(ff_slave_to_hc_master, ON)
+end
+
+rule "Aggregator_m_gf_m_ff_a_hc"
+when
+	Item gf_slave_to_hc_master received command ON or
+	Item ff_slave_to_hc_master received command ON 
+then
+	if (gf_slave_to_hc_master.state== ON) {
+		sendCommand(gf_slave_to_hc_master, OFF)
+	}
+
+	else if (ff_slave_to_hc_master.state== ON){
+		sendCommand(ff_slave_to_hc_master, OFF)
+	}
+	
+	do {                          // serie di cicli do-while che garantisce la mutua esclusione nella componente A, e nel caso ci 
+		do {                      // ci sia un addatamento garantisce mutua esclusione fino alle componenti E cosi da non sovrascrivere
+                                  // i flag gf_mod e ff_mod
+		} while (gf_mod || ff_mod)
+        
+	} while (start_a_hc.state== ON)
+
+	sendCommand (start_a_hc, ON)
+end
+
+rule "Analyze_a_hc"
+when
+	Item start_a_hc received command ON
+then
+    if(((Math::random * 100.0).intValue + 1) <= 50 ){
+        adaptation_required_gf = true
+    } 
+    if(((Math::random * 100.0).intValue + 1) <= 50 ){
+        adaptation_required_ff = true
+    } 
+
+	if(adaptation_required_gf || adaptation_required_ff) {   // verifico quale dei 2 cicli ha la precedenza e vado ad abilitate le variabili mod rispettive
+		 if (gf_call && flag_precedenza_gf) {    // disabilito i flag di call e di precedenza del piano gf se quest'ultimo ha la precedenza                 
+			gf_call= false
+			flag_precedenza_gf= false
+			if (ff_call && !flag_precedenza_ff)  // abilito il flag precedenza della controparte, nel caso sia attivo un monitor senza procedenza di quest'ultimo
+				flag_precedenza_ff= true		// (siccome ci deve essere sempre un monitor con precedenza)
+
+			gf_mod= true      // abilito il flag di gf_mod per tener traccia del fatto che è stato il piano gf a richiedere un adattamento
+	 	}
+		else if (ff_call && flag_precedenza_ff) {  // disabilito i flag di call e di precedenza del piano ff se quest'ultimo ha la precedenza
+			ff_call= false
+			flag_precedenza_ff= false
+			if (gf_call && !flag_precedenza_gf) // abilito il flag precedenza della controparte, nel caso sia attivo un monitor senza procedenza di quest'ultimo
+				flag_precedenza_gf= true	   // (siccome ci deve essere sempre un monitor con precedenza)
+
+			ff_mod= true	// abilito il flag di ff_mod per tener traccia del fatto che è stato il piano ff a richiedere un adattamento
+		}	
+                      
+		sendCommand(start_p_hc, ON)      // attivo componente P  
+    }
+  	else{
+	    if (gf_call && flag_precedenza_gf) {                      // verifico quale dei 2 cicli ha la precedenza e vado ad abilitate le variabili mod rispettive
+			gf_call= false
+			flag_precedenza_gf= false 
+			if (ff_call && !flag_precedenza_ff)
+				flag_precedenza_ff= true
+
+    		sendCommand(start_m_gf, ON)
+	  }
+		else if (ff_call && flag_precedenza_ff) {
+			ff_call= false
+			flag_precedenza_ff= false
+			if (gf_call && !flag_precedenza_gf)
+				flag_precedenza_gf= true
+
+    		sendCommand(start_m_ff, ON)
+		}
+    }
+	sendCommand(start_a_hc, OFF) 
+end 
+
+rule "Plan_p_hc"
+when
+	Item start_p_hc received command ON
+then
+	if (adaptation_required_gf) {       // in caso la variabile di adattamento gf sia attiva guarda in quale esatta stanza è richiesta 
+		adaptation_required_gf= false   // una modifica, andandola a salvare sulla variabile di modifica rispettiva
+
+		sendCommand(start_e_gf, ON) 
+	}
+
+	if (adaptation_required_ff) {       // in caso la variabile di adattamento ff sia attiva guarda in quale esatta stanza è richiesta 
+		adaptation_required_ff= false   // una modifica, andandola a salvare sulla variabile di modifica rispettiva
+
+		sendCommand(start_e_ff, ON)
+	}
+	sendCommand(start_p_hc, OFF)
+end
+
+rule "Exec_e_gf"
+when
+	Item start_e_gf received command ON
+then
+	sendCommand(start_e_gf, OFF)
+
+    if (gf_mod) {    // reset alla rispettiva componente M chiamante
+		gf_mod= false
+		sendCommand(start_m_gf, ON)
+	}
+	else if (ff_mod) {
+		ff_mod= false
+		sendCommand(start_m_ff, ON)
+	}	
+end 
+
+rule "Exec_e_ff"
+when
+	Item start_e_ff received command ON
+then                           // si va a controllare lo stato delle variabili di modifica, andando ad attuare eventuali modifiche
+	sendCommand(start_e_ff, OFF)
+
+    if (ff_mod) {           // reset alla rispettiva componente M chiamante
+		ff_mod= false
+		sendCommand(start_m_ff, ON)
+	}
+	else if (gf_mod) {
+		gf_mod= false
+		sendCommand(start_m_gf, ON)
+	}		
+end 

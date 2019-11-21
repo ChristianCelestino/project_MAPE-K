@@ -1,0 +1,19 @@
+Group chm "chm"
+
+Switch start_a_chm "a_chm" (chm)
+Switch start_p_chm "p_chm" (chm)
+
+Group hs0 "hs0"
+
+Switch start_m_hs0 "m_hs0" (hs0)
+Switch start_e_hs0 "e_hs0" (hs0)
+
+Group hs1 "hs1"
+
+Switch start_m_hs1 "m_hs1" (hs1)
+Switch start_e_hs1 "e_hs1" (hs1)
+
+//Group:Switch:OR(ON, OFF) hs0hs1_to_chm "hs0hs1_to_chm"
+
+Switch hs0_to_chm "hs0_to_chm" (hs0hs1_to_chm)
+Switch hs1_to_chm "hs1_to_chm" (hs0hs1_to_chm)
