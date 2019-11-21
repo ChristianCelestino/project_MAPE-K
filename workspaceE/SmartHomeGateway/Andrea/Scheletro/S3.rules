@@ -1,3 +1,5 @@
+import java.util.concurrent.locks.ReentrantLock
+
 var boolean gf_mod
 var boolean ff_mod
 var boolean flag_precedenza_gf
@@ -5,7 +7,10 @@ var boolean flag_precedenza_ff
 var boolean gf_call
 var boolean ff_call
 var boolean adaptation_required_gf        // varibili per la richiesta di adattamento per gf e ff
-var boolean adaptation_required_ff                                        
+var boolean adaptation_required_ff                                   
+
+val ReentrantLock lock_m  = new ReentrantLock()
+val ReentrantLock lock_e = new ReentrantLock()
 
 rule "StartLoop_MySmartHomeHC"
 when
@@ -26,19 +31,22 @@ then
 	flag_precedenza_gf= false
 	adaptation_required_gf= false              // inizializzo le variabili di adattamento a "false"
 	adaptation_required_ff= false
-
-	if (Managing_System_Active.state == ON) Managing_System_Active.postUpdate(OFF)
 end 
 
 rule "Monitor_m_gf"
 when
 	Item start_m_gf received command ON
 then 
-	if (!flag_precedenza_ff) {      // nel caso il flag_precedenza_ff sia spento allora questo ciclo ha la precedenza in quanto è arrivato per primo
+    try {
+        lock_m.lock()
+    } finally {
+        if (!flag_precedenza_ff) {      // nel caso il flag_precedenza_ff sia spento allora questo ciclo ha la precedenza in quanto è arrivato per primo
 
-			flag_precedenza_gf= true       
-	}
-	gf_call= true
+            flag_precedenza_gf= true       
+        }
+        gf_call= true
+        lock_m.unlock()
+    }
     sendCommand(start_m_gf, OFF)
 	sendCommand(gf_slave_to_hc_master, ON)
 end
@@ -47,16 +55,19 @@ rule "Monitor_m_ff"
 when
 	Item start_m_ff received command ON
 then
-	T_bed= FF_Bedroom_Temperature.state as Number   // Aquisizione knowedge 
-	T_cb= FF_Childrenroom_Temperature.state as Number
-	Target_Temp_ff= FF_Temperature_Setpoint.state as Number
-	if (!flag_precedenza_gf) {
- 									// nel caso il flag_precedenza_gf sia spento allora questo ciclo ha la precedenza in quanto è arrivato per primo
-			flag_precedenza_ff= true
-	} 
-	ff_call= true
+	
+    try {
+        lock_m.lock()
+    } finally {
+        if (!flag_precedenza_gf) {      // nel caso il flag_precedenza_ff sia spento allora questo ciclo ha la precedenza in quanto è arrivato per primo
+
+            flag_precedenza_ff= true       
+        }
+        ff_call= true
+        lock_m.unlock()
+    }
 	sendCommand(start_m_ff, OFF)
-	sendCommand(ff_slave_to_hc_master, ON)
+	sendCommand(ff_slave_to_hc_master, ON) 
 end
 
 rule "Aggregator_m_gf_m_ff_a_hc"
@@ -70,17 +81,17 @@ then
 
 	else if (ff_slave_to_hc_master.state== ON){
 		sendCommand(ff_slave_to_hc_master, OFF)
-	}
+	} 
 	
 	do {                          // serie di cicli do-while che garantisce la mutua esclusione nella componente A, e nel caso ci 
 		do {                      // ci sia un addatamento garantisce mutua esclusione fino alle componenti E cosi da non sovrascrivere
-                                  // i flag gf_mod e ff_mod
+            Thread::sleep(1000)
 		} while (gf_mod || ff_mod)
-        
+        Thread::sleep(1000)
 	} while (start_a_hc.state== ON)
 
 	sendCommand (start_a_hc, ON)
-end
+end 
 
 rule "Analyze_a_hc"
 when
@@ -91,7 +102,7 @@ then
     } 
     if(((Math::random * 100.0).intValue + 1) <= 50 ){
         adaptation_required_ff = true
-    } 
+    }
 
 	if(adaptation_required_gf || adaptation_required_ff) {   // verifico quale dei 2 cicli ha la precedenza e vado ad abilitate le variabili mod rispettive
 		 if (gf_call && flag_precedenza_gf) {    // disabilito i flag di call e di precedenza del piano gf se quest'ultimo ha la precedenza                 
@@ -131,10 +142,11 @@ then
     		sendCommand(start_m_ff, ON)
 		}
     }
+
 	sendCommand(start_a_hc, OFF) 
 end 
 
-rule "Plan_p_hc"
+rule "Plan_p_hc" 
 when
 	Item start_p_hc received command ON
 then
@@ -157,16 +169,21 @@ when
 	Item start_e_gf received command ON
 then
 	sendCommand(start_e_gf, OFF)
-
-    if (gf_mod) {    // reset alla rispettiva componente M chiamante
-		gf_mod= false
-		sendCommand(start_m_gf, ON)
-	}
-	else if (ff_mod) {
-		ff_mod= false
-		sendCommand(start_m_ff, ON)
-	}	
-end 
+    try {
+        lock_e.lock()
+    }
+    finally {
+        if (gf_mod) {    // reset alla rispettiva componente M chiamante
+            gf_mod= false
+            sendCommand(start_m_gf, ON)
+        }
+        else if (ff_mod) {
+            ff_mod= false
+            sendCommand(start_m_ff, ON)
+        }
+        lock_e.unlock()
+    }
+end
 
 rule "Exec_e_ff"
 when
@@ -174,12 +191,18 @@ when
 then                           // si va a controllare lo stato delle variabili di modifica, andando ad attuare eventuali modifiche
 	sendCommand(start_e_ff, OFF)
 
-    if (ff_mod) {           // reset alla rispettiva componente M chiamante
-		ff_mod= false
-		sendCommand(start_m_ff, ON)
-	}
-	else if (gf_mod) {
-		gf_mod= false
-		sendCommand(start_m_gf, ON)
-	}		
+    try {
+        lock_e.lock()
+    }
+    finally {
+        if (gf_mod) {    // reset alla rispettiva componente M chiamante
+            gf_mod= false
+            sendCommand(start_m_gf, ON)
+        }
+        else if (ff_mod) {
+            ff_mod= false
+            sendCommand(start_m_ff, ON)
+        }
+        lock_e.unlock()
+    }
 end 
