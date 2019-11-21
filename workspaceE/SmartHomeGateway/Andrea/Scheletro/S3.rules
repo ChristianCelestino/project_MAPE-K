@@ -87,6 +87,7 @@ then
 		do {                      // ci sia un addatamento garantisce mutua esclusione fino alle componenti E cosi da non sovrascrivere
             Thread::sleep(1000)
 		} while (gf_mod || ff_mod)
+        
         Thread::sleep(1000)
 	} while (start_a_hc.state== ON)
 
