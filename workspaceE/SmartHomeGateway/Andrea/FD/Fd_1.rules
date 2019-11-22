@@ -25,7 +25,7 @@ var Number gf_liv2
 var Number ff_bed
 var Number ff_cb
 
-rule "StartLoop_MySmartHomeHC"
+rule "StartLoop_MySmartHomeFD"
 when
 	System started
 then
@@ -51,6 +51,7 @@ then
 	flag_precedenza_gf= false
 	adaptation_required_gf= false              // inizializzo le variabili di adattamento a "false"
 	adaptation_required_ff= false
+	if (Managing_System_Active.state == ON) Managing_System_Active.postUpdate(OFF)
 end 
 
 rule "Monitor_m_gf"
@@ -73,7 +74,7 @@ then
 	lzTwoTemp = GF_LZone2_Temperature.state as Number
 
     sendCommand(start_m_gf, OFF)
-	sendCommand(gf_slave_to_hc_master, ON)
+	sendCommand(gf_slave_to_fd_master, ON)
 end
 
 rule "Monitor_m_ff"
@@ -95,20 +96,20 @@ then
 	bTemp = FF_Bedroom_Temperature.state as Number
 
 	sendCommand(start_m_ff, OFF)
-	sendCommand(ff_slave_to_hc_master, ON) 
+	sendCommand(ff_slave_to_fd_master, ON) 
 end
 
-rule "Aggregator_m_gf_m_ff_a_hc"
+rule "Aggregator_m_gf_m_ff_a_fd"
 when
-	Item gf_slave_to_hc_master received command ON or
-	Item ff_slave_to_hc_master received command ON 
+	Item gf_slave_to_fd_master received command ON or
+	Item ff_slave_to_fd_master received command ON 
 then
-	if (gf_slave_to_hc_master.state== ON) {
-		sendCommand(gf_slave_to_hc_master, OFF)
+	if (gf_slave_to_fd_master.state== ON) {
+		sendCommand(gf_slave_to_fd_master, OFF)
 	}
 
-	else if (ff_slave_to_hc_master.state== ON){
-		sendCommand(ff_slave_to_hc_master, OFF)
+	else if (ff_slave_to_fd_master.state== ON){
+		sendCommand(ff_slave_to_fd_master, OFF)
 	} 
 	
 	do {                          // serie di cicli do-while che garantisce la mutua esclusione nella componente A, e nel caso ci 
@@ -117,14 +118,14 @@ then
 		} while (gf_mod || ff_mod)
         
         Thread::sleep(1000)
-	} while (start_a_hc.state== ON)
+	} while (start_a_fd.state== ON)
 
-	sendCommand (start_a_hc, ON)
+	sendCommand (start_a_fd, ON)
 end 
 
-rule "Analyze_a_hc"
+rule "Analyze_a_fd"
 when
-	Item start_a_hc received command ON
+	Item start_a_fd received command ON
 then
     if(((lzOneTemp >= 45 || lzTwoTemp >= 45) && GF_Living_Fire_Alarm.state == OFF) ||
         (kiTemp >= 45 && GF_Kitchen_Fire_Alarm.state== OFF) || 
@@ -157,7 +158,7 @@ then
 			ff_mod= true	// abilito il flag di ff_mod per tener traccia del fatto che è stato il piano ff a richiedere un adattamento
 		}	
                       
-		sendCommand(start_p_hc, ON)      // attivo componente P  
+		sendCommand(start_p_fd, ON)      // attivo componente P  
     }
   	else{
 	    if (gf_call && flag_precedenza_gf) {                      // verifico quale dei 2 cicli ha la precedenza e vado ad abilitate le variabili mod rispettive
@@ -178,17 +179,17 @@ then
 		}
     }
 
-	sendCommand(start_a_hc, OFF) 
+	sendCommand(start_a_fd, OFF) 
 end 
 
-rule "Plan_p_hc" 
+rule "Plan_p_fd" 
 when
-	Item start_p_hc received command ON
+	Item start_p_fd received command ON
 then
 	if (adaptation_required_gf) {       // in caso la variabile di adattamento gf sia attiva guarda in quale esatta stanza è richiesta 
 		adaptation_required_gf= false   // una modifica, andandola a salvare sulla variabile di modifica rispettiva
        
-       if ((kiTemp >= 45 && GF_Kitchen_Fire_Alarm.state == OFF) {
+       if (kiTemp >= 45 && GF_Kitchen_Fire_Alarm.state == OFF) {
             gf_kit= 1
         }
         if (batTemp >= 45 && GF_Bathroom_Fire_Alarm.state== OFF) {
@@ -217,7 +218,7 @@ then
 		sendCommand(start_e_ff, ON)
 	}
 
-	sendCommand(start_p_hc, OFF)
+	sendCommand(start_p_fd, OFF)
 end
 
 rule "Exec_e_gf"
