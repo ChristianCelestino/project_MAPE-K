@@ -2,8 +2,8 @@ import java.util.concurrent.locks.ReentrantLock
 
 var boolean gf_mod
 var boolean ff_mod
-var boolean flag_precedenza_gf
-var boolean flag_precedenza_ff
+var boolean gf_priority
+var boolean ff_priority
 var boolean gf_call
 var boolean ff_call
 var boolean adaptation_required_gf        // varibili per la richiesta di adattamento per gf e ff
@@ -40,8 +40,8 @@ then
 	ff_mod= false
 	gf_call= false                  // inizializzo i flag di "call" e di "precedenza" utilizzati dalla componente A per poter richiamare 
 	ff_call= false                 //  l'esatto monitor che ha avviato tale componente
-	flag_precedenza_ff= false
-	flag_precedenza_gf= false
+	ff_priority= false
+	gf_priority= false
 	adaptation_required_gf= false              // inizializzo le variabili di adattamento a "false"
 	adaptation_required_ff= false
 
@@ -64,9 +64,9 @@ then
     try {
         lock_m.lock()
     } finally {
-        if (!flag_precedenza_ff) {      // nel caso il flag_precedenza_ff sia spento allora questo ciclo ha la precedenza in quanto è arrivato per primo
+        if (!ff_priority) {      // nel caso il ff_priority sia spento allora questo ciclo ha la precedenza in quanto è arrivato per primo
 
-            flag_precedenza_gf= true       
+            gf_priority= true       
         }
         gf_call= true
         lock_m.unlock()
@@ -88,9 +88,9 @@ then
     try {
         lock_m.lock()
     } finally {
-        if (!flag_precedenza_gf) {      // nel caso il flag_precedenza_ff sia spento allora questo ciclo ha la precedenza in quanto è arrivato per primo
+        if (!gf_priority) {      // nel caso il ff_priority sia spento allora questo ciclo ha la precedenza in quanto è arrivato per primo
 
-            flag_precedenza_ff= true       
+            ff_priority= true       
         }
         ff_call= true
         lock_m.unlock()
@@ -144,19 +144,19 @@ then
     }
 
 	if(adaptation_required_gf || adaptation_required_ff) {   // verifico quale dei 2 cicli ha la precedenza e vado ad abilitate le variabili mod rispettive
-		 if (gf_call && flag_precedenza_gf) {    // disabilito i flag di call e di precedenza del piano gf se quest'ultimo ha la precedenza                 
+		 if (gf_call && gf_priority) {    // disabilito i flag di call e di precedenza del piano gf se quest'ultimo ha la precedenza                 
 			gf_call= false
-			flag_precedenza_gf= false
-			if (ff_call && !flag_precedenza_ff)  // abilito il flag precedenza della controparte, nel caso sia attivo un monitor senza procedenza di quest'ultimo
-				flag_precedenza_ff= true		// (siccome ci deve essere sempre un monitor con precedenza)
+			gf_priority= false
+			if (ff_call && !ff_priority)  // abilito il flag precedenza della controparte, nel caso sia attivo un monitor senza procedenza di quest'ultimo
+				ff_priority= true		// (siccome ci deve essere sempre un monitor con precedenza)
 
 			gf_mod= true      // abilito il flag di gf_mod per tener traccia del fatto che è stato il piano gf a richiedere un adattamento
 	 	}
-		else if (ff_call && flag_precedenza_ff) {  // disabilito i flag di call e di precedenza del piano ff se quest'ultimo ha la precedenza
+		else if (ff_call && ff_priority) {  // disabilito i flag di call e di precedenza del piano ff se quest'ultimo ha la precedenza
 			ff_call= false
-			flag_precedenza_ff= false
-			if (gf_call && !flag_precedenza_gf) // abilito il flag precedenza della controparte, nel caso sia attivo un monitor senza procedenza di quest'ultimo
-				flag_precedenza_gf= true	   // (siccome ci deve essere sempre un monitor con precedenza)
+			ff_priority= false
+			if (gf_call && !gf_priority) // abilito il flag precedenza della controparte, nel caso sia attivo un monitor senza procedenza di quest'ultimo
+				gf_priority= true	   // (siccome ci deve essere sempre un monitor con precedenza)
 
 			ff_mod= true	// abilito il flag di ff_mod per tener traccia del fatto che è stato il piano ff a richiedere un adattamento
 		}	
@@ -164,19 +164,19 @@ then
 		sendCommand(start_p_fd, ON)      // attivo componente P  
     }
   	else{
-	    if (gf_call && flag_precedenza_gf) {                      // verifico quale dei 2 cicli ha la precedenza e vado ad abilitate le variabili mod rispettive
+	    if (gf_call && gf_priority) {                      // verifico quale dei 2 cicli ha la precedenza e vado ad abilitate le variabili mod rispettive
 			gf_call= false
-			flag_precedenza_gf= false 
-			if (ff_call && !flag_precedenza_ff)
-				flag_precedenza_ff= true
+			gf_priority= false 
+			if (ff_call && !ff_priority)
+				ff_priority= true
 
     		sendCommand(start_m_gf, ON)
 	  }
-		else if (ff_call && flag_precedenza_ff) {
+		else if (ff_call && ff_priority) {
 			ff_call= false
-			flag_precedenza_ff= false
-			if (gf_call && !flag_precedenza_gf)
-				flag_precedenza_gf= true
+			ff_priority= false
+			if (gf_call && !gf_priority)
+				gf_priority= true
 
     		sendCommand(start_m_ff, ON)
 		}
