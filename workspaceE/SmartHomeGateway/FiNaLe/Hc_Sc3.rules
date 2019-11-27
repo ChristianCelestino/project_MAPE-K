@@ -70,7 +70,6 @@ rule "Monitor_m_gf"
 when
 	Item start_m_gf received command ON
 then 
-	Thread::sleep(1000)
     try { 
         lock_m.lock()
     } finally {
@@ -94,7 +93,6 @@ rule "Monitor_m_ff"
 when
 	Item start_m_ff received command ON
 then
-	Thread::sleep(1000)
     try {
         lock_m.lock()
     } finally {
