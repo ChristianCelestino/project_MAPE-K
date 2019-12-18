@@ -1,0 +1,19 @@
+Group hc_master "hc_master"
+
+Switch start_a_hc "a_hc" (hc_master)
+Switch start_p_hc "p_hc" (hc_master)
+
+Group gf_slave_hc "gf_slave_hc"
+
+Switch start_m_gf_hc "m_gf_hc" (gf_slave_hc)
+Switch start_e_gf_hc "e_gf_hc" (gf_slave_hc)
+
+Group ff_slave_hc "ff_slave_hc"
+
+Switch start_m_ff_hc "m_ff_hc" (ff_slave_hc)
+Switch start_e_ff_hc "e_ff_hc" (ff_slave_hc)
+
+Group:Switch:OR(ON, OFF) gf_slaveff_slave_to_hc_master "gf_slaveff_slave_to_hc_master"
+
+Switch gf_slave_to_hc_master "gf_slave_to_hc_master" (gf_slaveff_slave_to_hc_master)
+Switch ff_slave_to_hc_master "ff_slave_to_hc_master" (gf_slaveff_slave_to_hc_master)

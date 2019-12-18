@@ -1,0 +1,329 @@
+import java.util.concurrent.locks.ReentrantLock
+
+var boolean gf_mod
+var boolean ff_mod
+var boolean gf_priority
+var boolean ff_priority
+var boolean gf_call
+var boolean ff_call
+var boolean adaptation_required_gf        // varibili per la richiesta di adattamento per gf e ff
+var boolean adaptation_required_ff                                   
+
+val ReentrantLock lock_m  = new ReentrantLock()
+val ReentrantLock lock_e = new ReentrantLock()
+
+var Number ex_Pm10
+var Number liv_Pm10
+var Number ki_Pm10
+var Number ba_Pm10
+var Number cor_Pm10
+var Number liv
+var Number bat
+var Number cor
+var Number kit
+val Number Hysteresis = 0.045
+
+rule "StartLoop_MySmartHomeHC"
+when
+	System started
+then
+	gf_mod= false                   // iniziializzo i flag di "mod" utilizzati per tener traccia di quali monitor li abbia chiamati all'interno delle componenti E)
+	ff_mod= false
+	gf_call= false                  // inizializzo i flag di "call" e di "precedenza" utilizzati dalla componente A per poter richiamare 
+	ff_call= false                 //  l'esatto monitor che ha avviato tale componente
+	ff_priority= false
+	gf_priority= false
+	adaptation_required_gf= false              // inizializzo le variabili di adattamento a "false"
+	adaptation_required_ff= false
+ 
+    createTimer(now.plusSeconds(1)) [|  
+    	start_m_gf_aq.sendCommand(ON)  // Setto le componente a OFF ad eccezione dei monitor
+        start_m_ff_aq.sendCommand(ON)
+        start_a_aq.sendCommand(OFF)
+        start_p_aq.sendCommand(OFF)
+        start_e_gf_aq.sendCommand(OFF)
+        start_e_ff_aq.sendCommand(OFF)
+	]
+    forzatura.sendCommand(0)
+    cor=0
+    bat=0
+    liv=0
+    kit=0
+    if (Managing_System_Active.state == ON) Managing_System_Active.postUpdate(OFF)
+
+end 
+
+rule "Monitor_m_gf"
+when
+	Item start_m_gf_aq received command ON
+then 
+    logInfo("Aq_Sc2_ing.rules", "AQ:MONITOR GF")
+    try {
+        lock_m.lock()
+    } finally {
+        if (!ff_priority) {      // nel caso il ff_priority sia spento allora questo ciclo ha la precedenza in quanto è arrivato per primo
+
+            gf_priority= true       
+        }
+        gf_call= true
+        lock_m.unlock()
+    }
+    liv_Pm10= (GF_Living_AqPm10.state as DecimalType).doubleValue
+    ba_Pm10= (GF_Bathroom_AqPm10.state as DecimalType).doubleValue
+    ki_Pm10= (GF_Kitchen_AqPm10.state as DecimalType).doubleValue
+    ex_Pm10= (SimAqi_Pm10.state as DecimalType).doubleValue
+        
+    sendCommand(start_m_gf_aq, OFF)
+	sendCommand(gf_slave_to_aq_master, ON)
+end
+
+rule "Monitor_m_ff"
+when
+	Item start_m_ff_aq received command ON
+then
+    logInfo("Aq_Sc2_ing.rules", "AQ:MONITOR FF")
+    try {
+        lock_m.lock()
+    } finally {
+        if (!gf_priority) {      // nel caso il ff_priority sia spento allora questo ciclo ha la precedenza in quanto è arrivato per primo
+
+            ff_priority= true       
+        }
+        ff_call= true
+        lock_m.unlock()
+    }
+    cor_Pm10= (FF_Corridor_AqPm10.state as DecimalType).doubleValue
+    ex_Pm10=(SimAqi_Pm10.state as DecimalType).doubleValue
+        
+	sendCommand(start_m_ff_aq, OFF)
+	sendCommand(ff_slave_to_aq_master, ON) 
+end
+
+rule "Aggregator_m_gf_m_ff_a_aq"
+when
+	Item gf_slave_to_aq_master received command ON or 
+	Item ff_slave_to_aq_master received command ON 
+then 
+    logInfo("Aq_Sc2_ing.rules", "AQ:AGREG")
+	if (gf_slave_to_aq_master.state== ON) {
+		sendCommand(gf_slave_to_aq_master, OFF)
+	}
+
+	else if (ff_slave_to_aq_master.state== ON){
+		sendCommand(ff_slave_to_aq_master, OFF)
+	} 
+	
+    logInfo("Aq_Sc2_ing.rules", "AQ:________________________")
+    Thread::sleep (1000)
+
+	do {                          // serie di cicli do-while che garantisce la mutua esclusione nella componente A, e nel caso ci 
+		do {                      // ci sia un addatamento garantisce mutua esclusione fino alle componenti E cosi da non sovrascrivere
+            logInfo("Aq_Sc2_ing.rules", "AQ:WAITING FOR MOD")
+		} while (gf_mod || ff_mod)
+        logInfo("Aq_Sc2_ing.rules", "AQ:WAITING FOR ANALYZ")        
+	} while (start_a_aq.state== ON)
+
+	sendCommand (start_a_aq, ON)
+end 
+
+rule "Analyze_a_aq"
+when
+	Item start_a_aq received command ON
+then
+    logInfo("Aq_Sc2_ing.rules", "AQ:ANALIZY")
+    if(liv_Pm10 > (ex_Pm10+Hysteresis)|| ba_Pm10 > (ex_Pm10+Hysteresis)|| ki_Pm10 > (ex_Pm10+Hysteresis)||
+            liv_Pm10 < (ex_Pm10-Hysteresis)|| ba_Pm10 < (ex_Pm10-Hysteresis)|| ki_Pm10 < (ex_Pm10-Hysteresis)||
+            cor_Pm10 > (ex_Pm10+Hysteresis)||cor_Pm10 < (ex_Pm10-Hysteresis))
+        keep_window.sendCommand(1)
+    else
+        keep_window.sendCommand(0)
+    //se l'aria dentro è più sporca dell'esterno e le finestre sono chiuse richiedo l'adattamento al piano terra
+    if ((liv_Pm10 > (ex_Pm10+Hysteresis) && GF_Living_Window.state==CLOSED) ||
+		(ba_Pm10 > (ex_Pm10+Hysteresis) &&  GF_Bathroom_Window.state==CLOSED) ||
+		(ki_Pm10 > (ex_Pm10+Hysteresis) && GF_Kitchen_Window.state==CLOSED) ||
+		(liv_Pm10 < (ex_Pm10-Hysteresis) && GF_Living_Window.state==OPEN) ||
+		(ba_Pm10 < (ex_Pm10-Hysteresis) &&  GF_Bathroom_Window.state==OPEN) ||
+		(ki_Pm10 < (ex_Pm10-Hysteresis) && GF_Kitchen_Window.state==OPEN)) {
+            adaptation_required_gf= true
+
+	}
+    //se l'aria dentro è più sporca dell'esterno e le finestre sono chiuse richiedo l'adattamento al primo piano 
+    if ((cor_Pm10 > (ex_Pm10+Hysteresis) && (FF_ChildrenRoom_Window.state==CLOSED || FF_Bedroom_Window.state==CLOSED)) || 
+        (cor_Pm10 < (ex_Pm10-Hysteresis) && (FF_ChildrenRoom_Window.state==OPEN || FF_Bedroom_Window.state==OPEN))) {    
+            adaptation_required_ff=true
+    }
+
+	if(adaptation_required_gf || adaptation_required_ff) {
+        forzatura.sendCommand(2)                                               // verifico quale dei 2 cicli ha la precedenza e vado ad abilitate le variabili mod rispettive
+		 if (gf_call && gf_priority) {    // disabilito i flag di call e di precedenza del piano gf se quest'ultimo ha la precedenza                 
+			gf_call= false
+			gf_priority= false
+			if (ff_call && !ff_priority)  // abilito il flag precedenza della controparte, nel caso sia attivo un monitor senza procedenza di quest'ultimo
+				ff_priority= true		// (siccome ci deve essere sempre un monitor con precedenza)
+
+			gf_mod= true      // abilito il flag di gf_mod per tener traccia del fatto che è stato il piano gf a richiedere un adattamento
+	 	}
+		else if (ff_call && ff_priority) {  // disabilito i flag di call e di precedenza del piano ff se quest'ultimo ha la precedenza
+			ff_call= false
+			ff_priority= false
+			if (gf_call && !gf_priority) // abilito il flag precedenza della controparte, nel caso sia attivo un monitor senza procedenza di quest'ultimo
+				gf_priority= true	   // (siccome ci deve essere sempre un monitor con precedenza)
+
+			ff_mod= true	// abilito il flag di ff_mod per tener traccia del fatto che è stato il piano ff a richiedere un adattamento
+		}	
+                      
+		sendCommand(start_p_aq, ON)      // attivo componente P  
+    }
+  	else{
+          logInfo("Aq_Sc2_ing.rules", "AQ:RETURN")
+        if(keep_window.state==0 && forzatura.state==3)
+            forzatura.sendCommand(1)  
+
+        else if(keep_window.state==1)
+            forzatura.sendCommand(2)
+
+	    if (gf_call && gf_priority) {                      // verifico quale dei 2 cicli ha la precedenza e vado ad abilitate le variabili mod rispettive
+			gf_call= false
+			gf_priority= false 
+			if (ff_call && !ff_priority)
+				ff_priority= true
+
+    		sendCommand(start_m_gf_aq, ON)
+	  }
+		else if (ff_call && ff_priority) {
+			ff_call= false
+			ff_priority= false
+			if (gf_call && !gf_priority)
+				gf_priority= true
+
+    		sendCommand(start_m_ff_aq, ON)
+		}
+    }
+
+	sendCommand(start_a_aq, OFF) 
+end 
+
+rule "Plan_p_aq" 
+when
+	Item start_p_aq received command ON
+then
+	//se è richiesto adattamento al piano terra pianifico cosa fare attraverso i flag per ogni piano (1=apertura richiesta:0=chiusura richiesta)
+    if(adaptation_required_gf==true){
+        adaptation_required_gf=false
+        if(liv_Pm10 > (ex_Pm10+Hysteresis) && GF_Living_Window.state==CLOSED){
+		    liv=1 	//apri living
+        }
+	    else if (liv_Pm10 < (ex_Pm10-Hysteresis) && GF_Living_Window.state==OPEN){
+		    liv=2	//chiudi living
+        }
+	    if (ba_Pm10 > (ex_Pm10+Hysteresis) &&  GF_Bathroom_Window.state==CLOSED){
+		    bat=1
+        }
+	    else if(ba_Pm10 < (ex_Pm10-Hysteresis) &&  GF_Bathroom_Window.state==OPEN){
+		    bat=2
+        }
+	    if(ki_Pm10 > (ex_Pm10+Hysteresis) && GF_Kitchen_Window.state==CLOSED){
+		    kit=1
+        }
+	    else if(ki_Pm10 < (ex_Pm10-Hysteresis) && GF_Kitchen_Window.state==OPEN){
+		    kit=2
+        }
+       
+        sendCommand(start_e_gf_aq, ON)
+    }
+    //lo stesso vale per il primo piano
+    if(adaptation_required_ff==true){
+        adaptation_required_ff=false
+        if(cor_Pm10 > (ex_Pm10+Hysteresis) && (FF_ChildrenRoom_Window.state==CLOSED || FF_Bedroom_Window.state==CLOSED)){
+            cor=1 
+        }
+        else if(cor_Pm10 < (ex_Pm10-Hysteresis) && (FF_ChildrenRoom_Window.state==OPEN || FF_Bedroom_Window.state==OPEN)){
+            cor=2
+        }
+        
+        sendCommand(start_e_ff_aq, ON)
+
+    }
+	sendCommand(start_p_aq, OFF)
+end
+
+rule "Exec_e_gf"
+when
+	Item start_e_gf_aq received command ON
+then
+    if(liv==1){
+        liv=0
+        GF_Living_Window.postUpdate(OPEN)
+    }
+    else if(liv==2){
+        liv=0
+        GF_Living_Window.postUpdate(CLOSED)
+    } 
+    if(bat==1){
+        bat=0
+        GF_Bathroom_Window.postUpdate(OPEN)
+    }
+    else if(bat==2){
+        bat=0
+        GF_Bathroom_Window.postUpdate(CLOSED)
+    }
+    if(kit==1){
+        kit=0
+        GF_Kitchen_Window.postUpdate(OPEN)
+    }
+    else if(kit==2){
+        kit=0
+        GF_Kitchen_Window.postUpdate(CLOSED)
+    }
+
+	sendCommand(start_e_gf_aq, OFF)
+
+    try {
+        lock_e.lock()
+    }
+    finally {
+        if (gf_mod) {    // reset alla rispettiva componente M chiamante
+            gf_mod= false
+            sendCommand(start_m_gf_aq, ON)
+        }
+        else if (ff_mod) {
+            ff_mod= false
+            sendCommand(start_m_ff_aq, ON)
+        }
+        lock_e.unlock()
+    }
+end
+
+rule "Exec_e_ff"
+when
+	Item start_e_ff_aq received command ON
+then                   
+    if (cor==1) {
+        cor=0
+        FF_Bedroom_Window.postUpdate(OPEN)
+        FF_ChildrenRoom_Window.postUpdate(OPEN)
+    }
+    else if (cor==2) {
+        cor=0
+        FF_Bedroom_Window.postUpdate(CLOSED)
+        FF_ChildrenRoom_Window.postUpdate(CLOSED)
+    }
+
+        // si va a controllare lo stato delle variabili di modifica, andando ad attuare eventuali modifiche
+	sendCommand(start_e_ff_aq, OFF)
+
+    try {
+        lock_e.lock()
+    }
+    finally {
+        if (gf_mod) {    // reset alla rispettiva componente M chiamante
+            gf_mod= false
+            sendCommand(start_m_gf_aq, ON)
+        }
+        else if (ff_mod) {
+            ff_mod= false
+            sendCommand(start_m_ff_aq, ON)
+        }
+        lock_e.unlock()
+    }
+end 

@@ -25,14 +25,13 @@ when
     Item Starting_Hour_Windows_Closing changed or
     Item Starting_Minute_Windows_Closing changed or
     Item Stopping_Hour_Windows_Closing changed or
-    Item Stopping_Minute_Windows_Closing changed or
+    Item Stopping_Minute_Windows_Closing changed or 
     Item Starting_Hour_System_Activation changed or
     Item Starting_Minute_System_Activation changed or
     Item Stopping_Hour_System_Activation changed or
     Item Stopping_Minute_System_Activation changed or
     Time cron "0/1 0/1 * 1/1 * ? *" //Fire every 30 seconds (change to "0 0/1 * * * ?" to fire every minute) 
 then
-    FF_Childrenroom_heating.sendCommand(ON)
     //raccolgo la data corrente e gli orari impostati dall'utente
     datos = new SimpleDateFormat ("yyyy-MM-dd HH:mm:ss")
     currentDate = new Date()
@@ -47,8 +46,6 @@ then
     stoppingActivationDate = datos.parse(stoppingSystemActivationTime)    
     //se la forzatura=0 (default) posso richiedere al managing di poter agire se siamo nelle fasce orarie
     if(forzatura.state==2 || forzatura.state==0){
-        FF_Bedroom_heating.sendCommand(ON)
-        FF_Children_Bedroom_Fire_Alarm.sendCommand(ON)
         if ((currentDate.after(startingClosingDate) && currentDate.before(stoppingClosingDate)) || 
             (currentDate.after(startingActivationDate) && currentDate.before(stoppingActivationDate))){
             forzatura.sendCommand(3)  //invio la richiesta al managing (forzatura=3)  
@@ -62,7 +59,6 @@ then
     
 
     if(forzatura.state==1 && keep_window.state==0){
-        GF_Kitchen_heating.sendCommand(ON)
         if (currentDate.after(startingClosingDate) && currentDate.before(stoppingClosingDate)) {
             GF_Living_Window.postUpdate("CLOSED")
             GF_Kitchen_Window.postUpdate("CLOSED")

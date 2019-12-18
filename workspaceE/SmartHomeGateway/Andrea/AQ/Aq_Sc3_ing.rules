@@ -37,12 +37,12 @@ then
 	adaptation_required_ff= false
  
     createTimer(now.plusSeconds(1)) [|  
-    	start_m_gf.sendCommand(ON)  // Setto le componente a OFF ad eccezione dei monitor
-        start_m_ff.sendCommand(ON)
+    	start_m_gf_aq.sendCommand(ON)  // Setto le componente a OFF ad eccezione dei monitor
+        start_m_ff_aq.sendCommand(ON)
         start_a_aq.sendCommand(OFF)
         start_p_aq.sendCommand(OFF)
-        start_e_gf.sendCommand(OFF)
-        start_e_ff.sendCommand(OFF)
+        start_e_gf_aq.sendCommand(OFF)
+        start_e_ff_aq.sendCommand(OFF)
 	]
     forzatura.sendCommand(0)
     cor=0
@@ -55,8 +55,9 @@ end
 
 rule "Monitor_m_gf"
 when
-	Item start_m_gf received command ON
+	Item start_m_gf_aq received command ON
 then 
+    logInfo("Aq_Sc2_ing.rules", "AQ:MONITOR GF")
     try {
         lock_m.lock()
     } finally {
@@ -72,14 +73,15 @@ then
     ki_Pm10= (GF_Kitchen_AqPm10.state as DecimalType).doubleValue
     ex_Pm10= (SimAqi_Pm10.state as DecimalType).doubleValue
         
-    sendCommand(start_m_gf, OFF)
+    sendCommand(start_m_gf_aq, OFF)
 	sendCommand(gf_slave_to_aq_master, ON)
 end
 
 rule "Monitor_m_ff"
 when
-	Item start_m_ff received command ON
+	Item start_m_ff_aq received command ON
 then
+    logInfo("Aq_Sc2_ing.rules", "AQ:MONITOR FF")
     try {
         lock_m.lock()
     } finally {
@@ -93,15 +95,16 @@ then
     cor_Pm10= (FF_Corridor_AqPm10.state as DecimalType).doubleValue
     ex_Pm10=(SimAqi_Pm10.state as DecimalType).doubleValue
         
-	sendCommand(start_m_ff, OFF)
+	sendCommand(start_m_ff_aq, OFF)
 	sendCommand(ff_slave_to_aq_master, ON) 
 end
 
 rule "Aggregator_m_gf_m_ff_a_aq"
 when
-	Item gf_slave_to_aq_master received command ON or
+	Item gf_slave_to_aq_master received command ON or 
 	Item ff_slave_to_aq_master received command ON 
-then
+then 
+    logInfo("Aq_Sc2_ing.rules", "AQ:AGREG")
 	if (gf_slave_to_aq_master.state== ON) {
 		sendCommand(gf_slave_to_aq_master, OFF)
 	}
@@ -110,11 +113,14 @@ then
 		sendCommand(ff_slave_to_aq_master, OFF)
 	} 
 	
+    logInfo("Aq_Sc2_ing.rules", "AQ:________________________")
+    Thread::sleep (1000)
+
 	do {                          // serie di cicli do-while che garantisce la mutua esclusione nella componente A, e nel caso ci 
 		do {                      // ci sia un addatamento garantisce mutua esclusione fino alle componenti E cosi da non sovrascrivere
-            
+            logInfo("Aq_Sc2_ing.rules", "AQ:WAITING FOR MOD")
 		} while (gf_mod || ff_mod)
-        
+        logInfo("Aq_Sc2_ing.rules", "AQ:WAITING FOR ANALYZ")        
 	} while (start_a_aq.state== ON)
 
 	sendCommand (start_a_aq, ON)
@@ -124,6 +130,7 @@ rule "Analyze_a_aq"
 when
 	Item start_a_aq received command ON
 then
+    logInfo("Aq_Sc2_ing.rules", "AQ:ANALIZY")
     if(liv_Pm10 > (ex_Pm10+Hysteresis)|| ba_Pm10 > (ex_Pm10+Hysteresis)|| ki_Pm10 > (ex_Pm10+Hysteresis)||
             liv_Pm10 < (ex_Pm10-Hysteresis)|| ba_Pm10 < (ex_Pm10-Hysteresis)|| ki_Pm10 < (ex_Pm10-Hysteresis)||
             cor_Pm10 > (ex_Pm10+Hysteresis)||cor_Pm10 < (ex_Pm10-Hysteresis))
@@ -168,6 +175,7 @@ then
 		sendCommand(start_p_aq, ON)      // attivo componente P  
     }
   	else{
+          logInfo("Aq_Sc2_ing.rules", "AQ:RETURN")
         if(keep_window.state==0 && forzatura.state==3)
             forzatura.sendCommand(1)  
 
@@ -180,7 +188,7 @@ then
 			if (ff_call && !ff_priority)
 				ff_priority= true
 
-    		sendCommand(start_m_gf, ON)
+    		sendCommand(start_m_gf_aq, ON)
 	  }
 		else if (ff_call && ff_priority) {
 			ff_call= false
@@ -188,7 +196,7 @@ then
 			if (gf_call && !gf_priority)
 				gf_priority= true
 
-    		sendCommand(start_m_ff, ON)
+    		sendCommand(start_m_ff_aq, ON)
 		}
     }
 
@@ -221,7 +229,7 @@ then
 		    kit=2
         }
        
-        sendCommand(start_e_gf, ON)
+        sendCommand(start_e_gf_aq, ON)
     }
     //lo stesso vale per il primo piano
     if(adaptation_required_ff==true){
@@ -233,7 +241,7 @@ then
             cor=2
         }
         
-        sendCommand(start_e_ff, ON)
+        sendCommand(start_e_ff_aq, ON)
 
     }
 	sendCommand(start_p_aq, OFF)
@@ -241,7 +249,7 @@ end
 
 rule "Exec_e_gf"
 when
-	Item start_e_gf received command ON
+	Item start_e_gf_aq received command ON
 then
     if(liv==1){
         liv=0
@@ -250,7 +258,7 @@ then
     else if(liv==2){
         liv=0
         GF_Living_Window.postUpdate(CLOSED)
-    }
+    } 
     if(bat==1){
         bat=0
         GF_Bathroom_Window.postUpdate(OPEN)
@@ -268,7 +276,7 @@ then
         GF_Kitchen_Window.postUpdate(CLOSED)
     }
 
-	sendCommand(start_e_gf, OFF)
+	sendCommand(start_e_gf_aq, OFF)
 
     try {
         lock_e.lock()
@@ -276,11 +284,11 @@ then
     finally {
         if (gf_mod) {    // reset alla rispettiva componente M chiamante
             gf_mod= false
-            sendCommand(start_m_gf, ON)
+            sendCommand(start_m_gf_aq, ON)
         }
         else if (ff_mod) {
             ff_mod= false
-            sendCommand(start_m_ff, ON)
+            sendCommand(start_m_ff_aq, ON)
         }
         lock_e.unlock()
     }
@@ -288,7 +296,7 @@ end
 
 rule "Exec_e_ff"
 when
-	Item start_e_ff received command ON
+	Item start_e_ff_aq received command ON
 then                   
     if (cor==1) {
         cor=0
@@ -302,7 +310,7 @@ then
     }
 
         // si va a controllare lo stato delle variabili di modifica, andando ad attuare eventuali modifiche
-	sendCommand(start_e_ff, OFF)
+	sendCommand(start_e_ff_aq, OFF)
 
     try {
         lock_e.lock()
@@ -310,11 +318,11 @@ then
     finally {
         if (gf_mod) {    // reset alla rispettiva componente M chiamante
             gf_mod= false
-            sendCommand(start_m_gf, ON)
+            sendCommand(start_m_gf_aq, ON)
         }
         else if (ff_mod) {
             ff_mod= false
-            sendCommand(start_m_ff, ON)
+            sendCommand(start_m_ff_aq, ON)
         }
         lock_e.unlock()
     }

@@ -1,0 +1,19 @@
+Group fd_master "fd_master"
+
+Switch start_a_fd "a_fd" (fd_master)
+Switch start_p_fd "p_fd" (fd_master)
+
+Group gf_slave "gf_slave_fd"
+
+Switch start_m_gf_fd "m_gf_fd" (gf_slave_fd)
+Switch start_e_gf_fd "e_gf_fd" (gf_slave_fd)
+
+Group ff_slave "ff_slave_fd"
+
+Switch start_m_ff_fd "m_ff_fd" (ff_slave_fd)
+Switch start_e_ff_fd "e_ff_fd" (ff_slave_fd)
+
+Group:Switch:OR(ON, OFF) gf_slaveff_slave_to_fd_master "gf_slaveff_slave_to_fd_master"
+
+Switch gf_slave_to_fd_master "gf_slave_to_fd_master" (gf_slaveff_slave_to_fd_master)
+Switch ff_slave_to_fd_master "ff_slave_to_fd_master" (gf_slaveff_slave_to_fd_master)

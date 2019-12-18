@@ -49,12 +49,14 @@ then
 	adaptation_required_ff= false
 
 	createTimer(now.plusSeconds(1)) [|  
-    	start_m_gf.sendCommand(ON)  // Setto le componente a OFF ad eccezione dei monitor
-		start_m_ff.sendCommand(ON)
 		start_a_hc.sendCommand(OFF)
 		start_p_hc.sendCommand(OFF)
-		start_e_gf.sendCommand(OFF)
-		start_e_ff.sendCommand(OFF)
+		start_e_gf_hc.sendCommand(OFF)
+		start_e_ff_hc.sendCommand(OFF)
+		gf_slave_to_hc_master.sendCommand(OFF)
+		ff_slave_to_hc_master.sendCommand(OFF)
+		start_m_gf_hc.sendCommand(ON)  // Setto le componente a OFF ad eccezione dei monitor
+		start_m_ff_hc.sendCommand(ON)
 	]
 	
     GF_Bathroom_heating.sendCommand(OFF)    // All'inizio il riscaldamento è spento
@@ -68,10 +70,12 @@ end
 
 rule "Monitor_m_gf"
 when
-	Item start_m_gf received command ON
+	Item start_m_gf_hc received command ON
 then 
     try { 
+		logInfo("Hc_Sc3.rules", "HC:TRY GF LOCK-----------------")
         lock_m.lock()
+		logInfo("Hc_Sc3.rules", "HC:LOCK GF --------------------")
     } finally {
         if (!ff_priority) {      // nel caso il ff_priority sia spento allora questo ciclo ha la precedenza in quanto è arrivato per primo
 
@@ -79,22 +83,25 @@ then
         }
         gf_call= true
         lock_m.unlock()
+		logInfo("Hc_Sc3.rules", "HC:UNLOCK GF --------------------")
     }
     T_lv1= GF_LZone1_Temperature.state as Number        // Aquisizione knowedge 
 	T_lv2= GF_LZone2_Temperature.state as Number      
 	T_bat= GF_Bathroom_Temperature.state as Number           
 	T_kit= GF_Kitchen_Temperature.state as Number                
     Target_Temp_gf= GF_Temperature_Setpoint.state as Number 
-    sendCommand(start_m_gf, OFF)
+    sendCommand(start_m_gf_hc, OFF)
 	sendCommand(gf_slave_to_hc_master, ON)
 end
-
+ 
 rule "Monitor_m_ff"
 when
-	Item start_m_ff received command ON
+	Item start_m_ff_hc received command ON
 then
     try {
+		logInfo("Hc_Sc3.rules", "HC:TRY FF LOCK --------------")
         lock_m.lock()
+		logInfo("Hc_Sc3.rules", "HC:LOCK FF --------------")
     } finally {
         if (!gf_priority) {      // nel caso il ff_priority sia spento allora questo ciclo ha la precedenza in quanto è arrivato per primo
 
@@ -102,18 +109,19 @@ then
         }
         ff_call= true
         lock_m.unlock()
+		logInfo("Hc_Sc3.rules", "HC:UNLOCK FF -------------")
     }
     T_bed= FF_Bedroom_Temperature.state as Number   // Aquisizione knowedge 
 	T_cb= FF_Childrenroom_Temperature.state as Number
 	Target_Temp_ff= FF_Temperature_Setpoint.state as Number
-	sendCommand(start_m_ff, OFF)
+	sendCommand(start_m_ff_hc, OFF)
 	sendCommand(ff_slave_to_hc_master, ON) 
 end
 
 rule "Aggregator_m_gf_m_ff_a_hc"
 when
 	Item gf_slave_to_hc_master received command ON or
-	Item ff_slave_to_hc_master received command ON  
+	Item ff_slave_to_hc_master received command ON   
 then
 	if (gf_slave_to_hc_master.state== ON) {
 		sendCommand(gf_slave_to_hc_master, OFF)
@@ -122,21 +130,25 @@ then
 	else if (ff_slave_to_hc_master.state== ON){
 		sendCommand(ff_slave_to_hc_master, OFF)
 	} 
-	
+
+	Thread::sleep(1000)
+	logInfo("Hc_Sc3.rules", "HC:///////////////////////////////////////////")
+
 	do {                          // serie di cicli do-while che garantisce la mutua esclusione nella componente A, e nel caso ci 
 		do {                      // ci sia un addatamento garantisce mutua esclusione fino alle componenti E cosi da non sovrascrivere
-            
+            logInfo("Hc_Sc3.rules", "HC:WAITING FOR MOD")
 		} while (gf_mod || ff_mod)
-        
-	} while (start_a_hc.state== ON)
+        logInfo("Hc_Sc3.rules", "HC:WAITING FOR ANALYZ")
+	} while (start_a_hc.state== ON )
 
 	sendCommand (start_a_hc, ON)
-end 
+end
 
-rule "Analyze_a_hc"
+rule "Analyze_a_hc" 
 when
 	Item start_a_hc received command ON
 then
+	logInfo("Hc_Sc3.rules", "HC:ANALYZI -----------")
     if(Heating_Mode.state!='STOP' && (((T_bat < (Target_Temp_gf-Hysteresis)) && GF_Bathroom_heating.state== OFF) ||  
 	((T_bat > (Target_Temp_gf+Hysteresis)) && GF_Bathroom_heating.state== ON) ||
 	((T_lv1 < (Target_Temp_gf-Hysteresis)) && GF_Living_heating1.state== OFF) ||
@@ -152,10 +164,11 @@ then
 	((T_bed > (Target_Temp_ff+Hysteresis)) && FF_Bedroom_heating.state== ON) ||
 	((T_cb < (Target_Temp_ff-Hysteresis)) && FF_Childrenroom_heating.state== OFF) ||
 	((T_cb > (Target_Temp_ff+Hysteresis)) && FF_Childrenroom_heating.state== ON))) {
-		adaptation_required_ff= true
+  		adaptation_required_ff= true
 	}
-
+  
 	if(adaptation_required_gf || adaptation_required_ff) {   // verifico quale dei 2 cicli ha la precedenza e vado ad abilitate le variabili mod rispettive
+		logInfo("Hc_Sc3.rules", "HC:ADAT ---------------")
 		 if (gf_call && gf_priority) {    // disabilito i flag di call e di precedenza del piano gf se quest'ultimo ha la precedenza                 
 			gf_call= false
 			gf_priority= false
@@ -176,13 +189,14 @@ then
 		sendCommand(start_p_hc, ON)      // attivo componente P  
     }
   	else{ 
+		  logInfo("Hc_Sc3.rules", "HC:RETURN ---------------")
 	    if (gf_call && gf_priority) {                      // verifico quale dei 2 cicli ha la precedenza e vado ad abilitate le variabili mod rispettive
 			gf_call= false
 			gf_priority= false 
 			if (ff_call && !ff_priority)
 				ff_priority= true
 
-    		sendCommand(start_m_gf, ON)
+    		sendCommand(start_m_gf_hc, ON)
 	  }
 		else if (ff_call && ff_priority) {
 			ff_call= false
@@ -190,7 +204,7 @@ then
 			if (gf_call && !gf_priority)
 				gf_priority= true
 
-    		sendCommand(start_m_ff, ON)
+    		sendCommand(start_m_ff_hc, ON)
 		}
     }
 
@@ -201,6 +215,7 @@ rule "Plan_p_hc"
 when
 	Item start_p_hc received command ON
 then
+	logInfo("Hc_Sc3.rules", "HC:PLANN ---------------")
 	if (adaptation_required_gf) {       // in caso la variabile di adattamento gf sia attiva guarda in quale esatta stanza è richiesta 
 		adaptation_required_gf= false   // una modifica, andandola a salvare sulla variabile di modifica rispettiva
 		if ((T_bat < (Target_Temp_gf-Hysteresis)) && GF_Bathroom_heating.state== OFF) {
@@ -227,31 +242,35 @@ then
 		else if ((T_kit > (Target_Temp_gf+Hysteresis)) && GF_Kitchen_heating.state== ON) {
 			gf_kit= 2
 		}
-		sendCommand(start_e_gf, ON) 
+		sendCommand(start_e_gf_hc, ON) 
 	}
 
 	if (adaptation_required_ff) {       // in caso la variabile di adattamento ff sia attiva guarda in quale esatta stanza è richiesta 
 		adaptation_required_ff= false   // una modifica, andandola a salvare sulla variabile di modifica rispettiva
 		if ((T_bed < (Target_Temp_gf-Hysteresis)) && FF_Bedroom_heating.state!=ON) {
+			logInfo("Hc_Sc3.rules", "HC:P FF_BED=1")
 			ff_bed= 1
 		}
 		else if ((T_bed > (Target_Temp_ff+Hysteresis)) && FF_Bedroom_heating.state== ON) {
 			ff_bed= 2
+			logInfo("Hc_Sc3.rules", "HC:P FF_BED=2")
 		}
 		if ((T_cb < (Target_Temp_ff-Hysteresis)) && FF_Childrenroom_heating.state== OFF) {
 			ff_cb= 1
+			logInfo("Hc_Sc3.rules", "HC:P FF_CB=1")
 		}
 		else if ((T_cb > (Target_Temp_ff+Hysteresis)) && FF_Childrenroom_heating.state== ON) {
 			ff_cb= 2
+			logInfo("Hc_Sc3.rules", "HC:P FF_CB=2")
 		}
-		sendCommand(start_e_ff, ON)
+		sendCommand(start_e_ff_hc, ON)
 	}
 	sendCommand(start_p_hc, OFF)
 end
 
 rule "Exec_e_gf"
 when
-	Item start_e_gf received command ON
+	Item start_e_gf_hc received command ON
 then
     if (gf_liv1==1) {       // si va a controllare lo stato delle variabili di modifica, andando ad attuare eventuali modifiche
 		gf_liv1= 0
@@ -286,7 +305,7 @@ then
 		GF_Bathroom_heating.sendCommand(OFF)
 	}
     
-	sendCommand(start_e_gf, OFF)
+	sendCommand(start_e_gf_hc, OFF)
 
     try {
         lock_e.lock()
@@ -294,11 +313,11 @@ then
     finally {
         if (gf_mod) {    // reset alla rispettiva componente M chiamante
             gf_mod= false
-            sendCommand(start_m_gf, ON)
+            sendCommand(start_m_gf_hc, ON)
         }
         else if (ff_mod) {
             ff_mod= false
-            sendCommand(start_m_ff, ON)
+            sendCommand(start_m_ff_hc, ON)
         }
         lock_e.unlock()
     } 
@@ -306,7 +325,7 @@ end
 
 rule "Exec_e_ff"
 when
-	Item start_e_ff received command ON
+	Item start_e_ff_hc received command ON
 then                          
     if (ff_bed==1) {
 		ff_bed= 0 
@@ -325,7 +344,7 @@ then
 		FF_Childrenroom_heating.sendCommand (OFF)
 	}
 
-	sendCommand(start_e_ff, OFF)
+	sendCommand(start_e_ff_hc, OFF)
 
     try {
         lock_e.lock()
@@ -333,11 +352,11 @@ then
     finally {
         if (gf_mod) {    // reset alla rispettiva componente M chiamante
             gf_mod= false
-            sendCommand(start_m_gf, ON)
+            sendCommand(start_m_gf_hc, ON)
         }
         else if (ff_mod) {
             ff_mod= false
-            sendCommand(start_m_ff, ON)
+            sendCommand(start_m_ff_hc, ON)
         }
         lock_e.unlock()
     }
